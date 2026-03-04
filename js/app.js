@@ -18,7 +18,24 @@ class App {
         this.init(); 
     }
     
-    init() {
+    async init() {
+        // 1. Wait for the data to load first!
+        if (window.dataLoadPromise) {
+            await window.dataLoadPromise;
+        } else {
+            console.error("dataLoadPromise not found. Is data.js loaded?");
+            return;
+        }
+
+        // 2. Check if data actually loaded
+        if (!KnowledgeBase.isLoaded) {
+            console.error("Data failed to load. Check console for CORS or JSON errors.");
+            // Optional: Show a friendly error to the user on the page
+            document.body.innerHTML = '<div style="color:red;padding:20px;text-align:center;">Failed to load knowledge data. Please run this project using a local server (e.g., "Live Server" in VS Code).</div>';
+            return;
+        }
+
+        // 3. Proceed with DOM readiness
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.setup());
         } else {
