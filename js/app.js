@@ -401,8 +401,11 @@ class App {
         if (subtitle) subtitle.textContent = term.shortDesc;
         
         // Definition
+        // Definition (Markdown Enabled)
         const definition = document.getElementById('panelDefinition');
-        if (definition) definition.textContent = term.definition;
+        if (definition) {
+            definition.innerHTML = this.parseMarkdown(term.definition);
+        }
         
         // Related terms
         const relatedContainer = document.getElementById('relatedTerms');
@@ -622,7 +625,49 @@ class App {
             setTimeout(() => toast.remove(), 300);
         }, 3000);
     }
+    
+    
+    
+    
+    
+    escapeHTML(text) {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+    
+    parseMarkdown(text) {
+        if (!text) return '';
+    
+        text = this.escapeHTML(text);
+    
+        // Bold
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+        // Inline code
+        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+    
+        // Code blocks
+        text = text.replace(/```([\s\S]*?)```/g, (match, p1) =>
+            `<pre><code>${p1.trim()}</code></pre>`
+        );
+    
+        // Bullet lists
+        text = text.replace(/^- (.+)$/gm, '<li>$1</li>');
+    
+        // Numbered lists
+        text = text.replace(/^\d+\.\s(.+)$/gm, '<li>$1</li>');
+    
+        // Wrap list items
+        text = text.replace(/(<li>.*?<\/li>)/gs, '<ul>$1</ul>');
+    
+        // Line breaks
+        text = text.replace(/\n/g, '<br>');
+    
+        return text;
+    }
 }
 
-// Initialize and expose to window
+//Initialise and expose to the window
 window.app = new App();
