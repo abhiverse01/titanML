@@ -631,10 +631,10 @@ class App {
     
     
     escapeHTML(text) {
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
     }
     
     parseMarkdown(text) {
@@ -642,28 +642,55 @@ class App {
     
         text = this.escapeHTML(text);
     
-        // Bold
-        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // ---- CODE BLOCKS (handle first to prevent corruption) ----
+        text = text.replace(/```([\s\S]*?)```/g, (match, p1) => {
+            return `<pre><code>${p1.trim()}</code></pre>`;
+        });
     
-        // Inline code
+        // ---- INLINE CODE ----
         text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
     
-        // Code blocks
-        text = text.replace(/```([\s\S]*?)```/g, (match, p1) =>
-            `<pre><code>${p1.trim()}</code></pre>`
-        );
+        // ---- BOLD ----
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     
-        // Bullet lists
-        text = text.replace(/^- (.+)$/gm, '<li>$1</li>');
+        // ---- HEADINGS (optional enhancement) ----
+        text = text.replace(/^### (.*$)/gm, '<h4>$1</h4>');
+        text = text.replace(/^## (.*$)/gm, '<h3>$1</h3>');
+        text = text.replace(/^# (.*$)/gm, '<h2>$1</h2>');
     
-        // Numbered lists
-        text = text.replace(/^\d+\.\s(.+)$/gm, '<li>$1</li>');
+        // ---- BULLET LISTS (group properly) ----
+        text = text.replace(/(?:^- .+\n?)+/gm, (match) => {
+            const items = match.trim().split('\n')
+                .map(line => line.replace(/^- /, '').trim())
+                .map(item => `<li>${item}</li>`)
+                .join('');
+            return `<ul>${items}</ul>`;
+        });
     
-        // Wrap list items
-        text = text.replace(/(<li>.*?<\/li>)/gs, '<ul>$1</ul>');
+        // ---- NUMBERED LISTS (group properly) ----
+        text = text.replace(/(?:^\d+\. .+\n?)+/gm, (match) => {
+            const items = match.trim().split('\n')
+                .map(line => line.replace(/^\d+\. /, '').trim())
+                .map(item => `<li>${item}</li>`)
+                .join('');
+            return `<ol>${items}</ol>`;
+        });
     
-        // Line breaks
-        text = text.replace(/\n/g, '<br>');
+        // ---- PARAGRAPHS ----
+        text = text
+            .split(/\n\s*\n/)
+            .map(block => {
+                if (
+                    block.startsWith('<ul>') ||
+                    block.startsWith('<ol>') ||
+                    block.startsWith('<pre>') ||
+                    block.startsWith('<h')
+                ) {
+                    return block;
+                }
+                return `<p>${block.trim()}</p>`;
+            })
+            .join('');
     
         return text;
     }
