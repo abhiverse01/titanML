@@ -42,7 +42,6 @@ const KnowledgeBase = {
 // ==========================================
 async function initKnowledgeBase() {
     try {
-        // Adjust path if your json file is in a different directory
         const response = await fetch('data.json'); 
         
         if (!response.ok) {
@@ -51,12 +50,10 @@ async function initKnowledgeBase() {
         
         const data = await response.json();
 
-        // Populate categories
         if (data.categories) {
             KnowledgeBase.categories = data.categories;
         }
 
-        // Populate terms using the helper function
         if (data.terms) {
             KnowledgeBase.terms = data.terms.map(t => createTerm(t));
         }
@@ -67,6 +64,10 @@ async function initKnowledgeBase() {
         
     } catch (e) {
         console.error('Failed to load KnowledgeBase data:', e);
+        // Helpful warning for beginners regarding CORS
+        if (window.location.protocol === 'file:') {
+             console.warn("⚠️ SECURITY ERROR: You are opening this file directly. Browsers block fetch() on local files. You must use a local server (e.g., VS Code 'Live Server' extension).");
+        }
         return null;
     }
 }
@@ -75,6 +76,7 @@ async function initKnowledgeBase() {
 // UTILITY FUNCTIONS
 // ==========================================
 const KnowledgeUtils = {
+    // ... (Keep your existing utility functions exactly as they are) ...
     addCategory(category) {
         if (!category.id || !category.name) return false;
         if (KnowledgeBase.categories.find(c => c.id === category.id)) return false;
@@ -147,12 +149,15 @@ const KnowledgeUtils = {
 };
 
 // ==========================================
-// GLOBAL EXPORTS
+// GLOBAL EXPORTS & AUTO-INIT
 // ==========================================
 window.KnowledgeBase = KnowledgeBase;
 window.KnowledgeUtils = KnowledgeUtils;
 window.initKnowledgeBase = initKnowledgeBase;
 
-// Usage Example (in your main HTML script):
-// await initKnowledgeBase();
-// console.log(KnowledgeUtils.getStats());
+// ==========================================
+// FIX: Call the function automatically
+// ==========================================
+(function() {
+    initKnowledgeBase();
+})();
