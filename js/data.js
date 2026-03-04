@@ -156,8 +156,7 @@ window.KnowledgeUtils = KnowledgeUtils;
 window.initKnowledgeBase = initKnowledgeBase;
 
 // ==========================================
-// FIX: Call the function automatically
+// FIX: Initialize and expose the promise
 // ==========================================
-(function() {
-    initKnowledgeBase();
-})();
+// We assign the promise to a global variable so App.js can await it
+window.dataLoadPromise = initKnowledgeBase();
