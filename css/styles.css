@@ -893,10 +893,20 @@ body {
     gap: 8px;
 }
 
+/* ==========================================
+   DEFINITION TEXT FIX
+   ========================================== */
 .section-text {
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
     line-height: 1.7;
+    
+    /* FIX 1: Respect newlines in the text (for lists/formulas) */
+    white-space: pre-line; 
+    
+    /* FIX 2: Prevent long formulas from breaking the layout */
+    overflow-wrap: break-word; 
+    word-break: break-word;
 }
 
 .related-grid {
