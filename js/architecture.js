@@ -168,22 +168,14 @@ class ArchitectureManager {
     }
 
     hideVisual(manageHistory = true) {
-        if (manageHistory && window.location.hash === '#arch') {
-            window.history.back();
-            return;
-        }
-
-        // PERFORMANCE FIX: Remove transition temporarily for instant switch
+        // PERFORMANCE FIX: Remove transitions immediately for instant visual switch
         this.container.style.transition = 'none';
         
+        // 1. Instantly hide Architecture View
         this.container.style.display = 'none';
         this.container.classList.remove('active');
         
-        // Restore transition after a brief delay (optional, but good practice)
-        setTimeout(() => {
-            this.container.style.transition = '';
-        }, 50);
-        
+        // 2. Instantly restore Main View
         const content = document.getElementById('content');
         const sidebar = document.querySelector('.sidebar');
         
@@ -191,6 +183,16 @@ class ArchitectureManager {
         if(sidebar) sidebar.style.display = 'flex';
         
         this.currentView = 'graph';
+
+        // 3. Handle URL without triggering slow browser navigation
+        // If the UI button was clicked, we manually clear the hash for speed.
+        // If the browser Back button was clicked, we let it handle the hash change (via popstate).
+        if (manageHistory && window.location.hash === '#arch') {
+            // Manually push state to clear hash (Faster than history.back())
+            history.pushState(null, null, ' '); 
+            // Note: If this causes issues with the browser back button, stick to history.back() 
+            // but this manual clear usually feels "snappier".
+        }
     }
 
 
