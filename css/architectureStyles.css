@@ -87,7 +87,7 @@
     transform: translateX(2px); /* Slight nudge right on hover */
 }
 
-/* 4. GALLERY GRID (Fixed Breaking) */
+/* 4. GALLERY GRID (Typography & Layout Remastered) */
 .arch-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -107,7 +107,7 @@
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
-    min-height: 180px; /* CRITICAL FIX: Prevents 0-height cards */
+    min-height: 200px; /* Slightly taller to accommodate styling */
     display: flex;
     flex-direction: column;
     align-self: stretch; /* Stretches to fill grid row */
@@ -147,6 +147,50 @@
 }
 
 .arch-card:hover::before { transform: scaleX(1); }
+
+/* --- REMASTERED CARD TYPOGRAPHY --- */
+
+/* 4.1 Category (Badge Style) */
+.arch-category {
+    display: inline-block; /* Wraps content tightly */
+    font-size: var(--font-size-xs);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent-primary);
+    background: rgba(8, 145, 178, 0.1); /* Subtle tint background */
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    align-self: flex-start; /* Align left */
+    border: 1px solid rgba(8, 145, 178, 0.2);
+}
+
+/* 4.2. Title */
+.arch-title {
+    font-size: 1.25rem; /* Larger than variable for impact */
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+}
+
+/* 4.3. Description (Clamped & Readable) */
+.arch-desc {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary); /* Darker than tertiary for readability */
+    line-height: 1.6;
+    margin-top: auto; /* Pushes description to bottom of card if height varies */
+    
+    /* God Mode: Text Clamping (Truncates long text with ...) */
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* Show max 3 lines */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 
 /* 5. FLOWCHART ENGINE (Visual Upgrade) */
 .flow-container {
