@@ -1,8 +1,8 @@
 /* ==========================================
-   ARCHITECTURE VISUALIZER (GOD MODE FINAL)
+   ARCHITECTURE VISUALIZER (GOD MODE FINAL v4)
    ========================================== */
 
-/* 1. MAIN CONTAINER & CUSTOM SCROLLBAR */
+/* 1. MAIN CONTAINER */
 #archView {
     position: fixed;
     inset: 0;
@@ -14,21 +14,19 @@
     overflow-x: hidden;
     display: none;
     
-    /* Tech Grid */
+    /* Subtle Tech Grid */
     background-image: 
         linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
     background-size: 32px 32px;
 }
 
-/* GOD MODE: Custom Scrollbar (Thin & Styled) */
-#archView::-webkit-scrollbar { width: 8px; }
+/* Custom Scrollbar */
+#archView::-webkit-scrollbar { width: 6px; }
 #archView::-webkit-scrollbar-track { background: transparent; }
 #archView::-webkit-scrollbar-thumb { 
     background: var(--border-medium); 
-    border-radius: 4px; 
-    border: 2px solid transparent; /* Creates a track effect */
-    background-clip: content-box; 
+    border-radius: 3px; 
 }
 #archView::-webkit-scrollbar-thumb:hover { background: var(--border-dark); }
 
@@ -39,14 +37,14 @@
     padding-top: calc(var(--header-height) + 20px);
     padding-left: 20px;
     padding-right: 20px;
-    padding-bottom: 80px; /* More breathing room */
+    padding-bottom: 80px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-/* 3. VISUALIZER HEADER (Button on Right) */
+/* 3. HEADER */
 .viz-header {
     display: flex;
     justify-content: space-between;
@@ -66,7 +64,6 @@
 
 .viz-title-group { display: flex; flex-direction: column; }
 
-/* BACK BUTTON */
 .viz-back-btn {
     display: inline-flex;
     align-items: center;
@@ -106,7 +103,7 @@
 }
 
 .arch-card {
-    background: var(--bg-secondary);
+    background: var(--bg-secondary); /* Solid White */
     border: 1px solid var(--border-light);
     border-radius: var(--radius-xl);
     padding: 24px;
@@ -114,14 +111,14 @@
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
     overflow: hidden;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.05); /* Subtle Depth */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02); /* Very light shadow */
     min-height: 200px;
     display: flex;
     flex-direction: column;
     align-self: stretch;
 }
 
-/* Tech Corner Decoration */
+/* Tech Corner */
 .arch-card::after {
     content: '';
     position: absolute;
@@ -137,13 +134,12 @@
 .arch-card:hover {
     transform: translateY(-6px);
     border-color: var(--accent-primary);
-    box-shadow: 0 10px 30px rgba(8, 145, 178, 0.15); /* Stronger shadow */
+    box-shadow: 0 10px 30px rgba(8, 145, 178, 0.15);
     background: #fff;
 }
 
 .arch-card:hover::after { opacity: 1; }
 
-/* Top Accent Bar */
 .arch-card::before {
     content: '';
     position: absolute;
@@ -156,7 +152,7 @@
 
 .arch-card:hover::before { transform: scaleX(1); }
 
-/* Typography */
+/* Card Typography */
 .arch-category {
     display: inline-block;
     font-size: var(--font-size-xs);
@@ -193,421 +189,243 @@
     text-overflow: ellipsis;
 }
 
-/* =====================================
-   5. FLOWCHART ENGINE — GOD MODE v2
-   ===================================== */
+/* ==========================================
+   5. FLOWCHART ENGINE (PROFESSIONAL & FIXED)
+   ========================================== */
 
-
-/* =====================================
-   FLOWCHART ENGINE — GOD MODE v3
-   ===================================== */
-
-.flow-container{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    width:100%;
-    max-width:920px;
-    margin-inline:auto;
-    padding:40px 0;
-    position:relative;
+.flow-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 900px;
+    margin-inline: auto;
+    padding: 40px 0;
+    position: relative;
 }
 
-/* =========================
-   NEURAL SPINE
-   ========================= */
-
-.flow-container::before{
-    content:"";
-    position:absolute;
-    inset:0 auto 0 50%;
-    transform:translateX(-50%);
-    width:2px;
-
-    background:
-        linear-gradient(
-            to bottom,
-            transparent,
-            var(--accent-primary),
-            transparent
-        );
-
-    background-size:100% 200%;
-
-    opacity:.55;
-
-    box-shadow:
-        0 0 10px rgba(8,145,178,.25),
-        0 0 25px rgba(8,145,178,.2);
-
-    animation:spineFlow 4s linear infinite;
-
-    z-index:0;
+/* NEURAL SPINE (The Dashed Line) */
+.flow-container::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    border-left: 2px dashed var(--accent-primary);
+    border-right: 2px dashed var(--accent-primary);
+    background: var(--accent-primary); /* Fallback for old browsers */
+    
+    /* Animation */
+    background-image: linear-gradient(to bottom, var(--accent-primary) 50%, transparent 50%);
+    background-size: 100% 200%;
+    opacity: 0.4;
+    animation: spineFlow 3s linear infinite;
+    z-index: 0;
 }
 
-@keyframes spineFlow{
-    0%{background-position:0 -200%;}
-    100%{background-position:0 200%;}
+@keyframes spineFlow {
+    0% { background-position: 0% -200%; }
+    100% { background-position: 0% 200%; }
 }
 
-/* =========================
-   FLOW STEP
-   ========================= */
-
-.flow-step{
-    width:100%;
-    display:flex;
-    justify-content:center;
-    position:relative;
-    margin-bottom:42px;
-
-    opacity:0;
-    animation:nodeReveal .6s ease forwards;
-    animation-delay:calc(var(--step-index,0)*120ms);
+/* FLOW STEP */
+.flow-step {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 32px; /* Reduced gap for tighter look */
+    opacity: 0;
+    animation: nodeReveal 0.6s ease forwards;
+    animation-delay: calc(var(--step-index, 0) * 120ms);
 }
 
-@keyframes nodeReveal{
-
-    from{
-        opacity:0;
-        transform:translateY(30px);
-        filter:blur(6px);
+@keyframes nodeReveal {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+        filter: blur(4px);
     }
-
-    to{
-        opacity:1;
-        transform:translateY(0);
-        filter:blur(0);
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
     }
 }
 
-/* =========================
-   NODE CARD
-   ========================= */
-
-.step-box{
-
-    width:min(90%,680px);
-
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    text-align:center;
-
-    padding:26px 34px;
-
-    border-radius:14px;
-
-    border:1px solid var(--border-light);
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(255,255,255,.92),
-            rgba(255,255,255,.8)
-        );
-
-    backdrop-filter:blur(14px);
-
-    box-shadow:
-        0 6px 14px rgba(0,0,0,.06),
-        0 2px 6px rgba(0,0,0,.05);
-
-    position:relative;
-    z-index:2;
-
-    transition:
-        transform .25s ease,
-        box-shadow .25s ease,
-        border-color .25s ease;
-
+/* THE BOX (Clean & Solid) */
+.step-box {
+    width: min(90%, 680px); /* Limits width for readability */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 24px 32px;
+    border-radius: 12px; /* Slightly sharper than pill */
+    background: var(--bg-secondary); /* Solid White */
+    border: 1px solid var(--border-light);
+    
+    /* NO BACKDROP FILTER IN LIGHT MODE (Fixes Dark Box Issue) */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04), 0 4px 10px rgba(0, 0, 0, 0.02);
+    
+    position: relative;
+    z-index: 2;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
-/* subtle highlight edge */
-
-.step-box::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    border-radius:inherit;
-
-    background:
-        linear-gradient(
-            120deg,
-            transparent,
-            rgba(255,255,255,.4),
-            transparent
-        );
-
-    opacity:.15;
-    pointer-events:none;
+/* Inner Sheen (God Mode Detail) */
+.step-box::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.6), transparent);
+    opacity: 0.3;
+    pointer-events: none;
 }
 
-/* =========================
-   HOVER EFFECT
-   ========================= */
-
-.step-box:hover{
-
-    transform:
-        translateY(-4px)
-        scale(1.02);
-
-    border-color:var(--accent-primary);
-
-    box-shadow:
-        0 0 0 2px var(--accent-primary),
-        0 18px 45px rgba(8,145,178,.28);
-
+/* HOVER: Glowing Card */
+.step-box:hover {
+    transform: translateY(-3px) scale(1.01);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-primary), 0 20px 40px rgba(8, 145, 178, 0.15); /* God Mode Glow */
 }
 
-/* =========================
-   STATUS LIGHT
-   ========================= */
-
-.step-box::before{
-
-    content:"";
-
-    position:absolute;
-
-    top:-7px;
-    left:50%;
-
-    transform:translateX(-50%);
-
-    width:10px;
-    height:10px;
-
-    border-radius:50%;
-
-    background:var(--border-medium);
-
-    border:2px solid var(--bg-primary);
-
-    transition:.25s;
-
+/* STATUS LIGHT (Double Border Tech Look) */
+.step-box::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 10px;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-medium);
+    border-radius: 50%;
+    transition: background 0.3s, box-shadow 0.3s;
 }
 
-.step-box:hover::before{
-
-    background:var(--accent-success);
-
-    box-shadow:
-        0 0 12px var(--accent-success);
-
+.step-box:hover::before {
+    background: var(--accent-success);
+    border-color: var(--bg-primary);
+    box-shadow: 0 0 10px var(--accent-success);
 }
 
-/* =========================
-   CONNECTORS
-   ========================= */
-
-.flow-step:not(:last-child)::after{
-
-    content:"";
-    position:absolute;
-
-    left:50%;
-    bottom:-40px;
-
-    transform:translateX(-50%);
-
-    width:2px;
-    height:30px;
-
-    background:var(--border-medium);
-
-    opacity:.7;
-
+/* CONNECTORS (Fixed Math) */
+/* Line: 30px long, ending at bottom -30px */
+.flow-step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -30px; /* Matches gap */
+    transform: translateX(-50%);
+    width: 2px;
+    height: 30px;
+    background: var(--border-medium);
+    z-index: 1;
 }
 
-.flow-step:not(:last-child)::before{
-
-    content:"";
-    position:absolute;
-
-    left:50%;
-    bottom:-10px;
-
-    transform:translateX(-50%);
-
-    border-left:6px solid transparent;
-    border-right:6px solid transparent;
-    border-top:8px solid var(--border-medium);
-
+/* Arrow Head: At the end of the line (-20px) */
+.flow-step:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -20px;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--border-medium);
+    z-index: 2;
 }
 
-/* =========================
-   STEP TYPES
-   ========================= */
-
-.step-type-start .step-box{
-
-    border-radius:60px;
-
-    border:2px solid var(--accent-success);
-
-    background:
-        linear-gradient(
-            135deg,
-            var(--bg-secondary),
-            rgba(16,185,129,.12)
-        );
-
+/* BRANCHING (Nested Children) */
+/* Line from Left (-50px) to Parent */
+.step-children::before {
+    content: "";
+    position: absolute;
+    left: -40px;
+    top: 50%;
+    width: 40px;
+    height: 2px;
+    background: var(--border-light);
+    transform: translateY(-50%);
+    z-index: 1;
 }
 
-.step-type-end .step-box{
-
-    border-radius:60px;
-
-    border:2px solid var(--accent-danger);
-
-    background:
-        linear-gradient(
-            135deg,
-            var(--bg-secondary),
-            rgba(239,68,68,.12)
-        );
-
+/* Corner at Parent (Left -40px) */
+.step-children::after {
+    content: "";
+    position: absolute;
+    left: -40px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-left: 2px solid var(--border-light);
+    border-top: 2px solid var(--border-light);
+    transform: translateY(-50%) rotate(-45deg);
+    z-index: 1;
 }
 
-.step-type-highlight .step-box{
-
-    border:1px solid var(--accent-primary);
-
-    background:
-        linear-gradient(
-            135deg,
-            var(--bg-secondary),
-            rgba(8,145,178,.08)
-        );
-
+/* STEP TYPES (Visual Distinction) */
+.step-type-start .step-box {
+    border-radius: 50px; /* Pill */
+    border: 2px solid var(--accent-success);
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(16, 185, 129, 0.05));
+    padding: 24px 40px;
 }
 
-/* container / grouping nodes */
-
-.step-type-container .step-box{
-
-    background:var(--bg-tertiary);
-
-    border:1px dashed var(--border-medium);
-
+.step-type-end .step-box {
+    border-radius: 50px;
+    border: 2px solid var(--accent-danger);
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(239, 68, 68, 0.05));
+    padding: 24px 40px;
 }
 
-/* =========================
-   TYPOGRAPHY
-   ========================= */
-
-.step-label{
-
-    font-size:var(--font-size-md);
-    font-weight:800;
-
-    color:var(--text-primary);
-
-    letter-spacing:.05em;
-    text-transform:uppercase;
-
+.step-type-highlight .step-box {
+    border: 1px solid var(--accent-primary);
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(8, 145, 178, 0.05));
 }
 
-.step-desc{
-
-    margin-top:10px;
-    padding-top:10px;
-
-    border-top:1px solid var(--border-light);
-
-    font-size:var(--font-size-sm);
-
-    line-height:1.6;
-
-    color:var(--text-secondary);
-
+.step-type-container .step-box {
+    background: var(--bg-tertiary); /* Distinct Grey */
+    border: 1px dashed var(--border-medium);
+    border-radius: 8px; /* Slightly smaller radius for container */
 }
 
-/* =====================================
-   NESTED CHILDREN
-   ===================================== */
-
-.step-children{
-
-    display:flex;
-    flex-direction:column;
-
-    gap:18px;
-
-    margin-top:18px;
-    margin-left:40px;
-
-    padding:22px;
-
-    border-radius:14px;
-
-    border:1px solid var(--border-light);
-
-    background:var(--bg-primary);
-
-    box-shadow:
-        inset 0 2px 4px rgba(0,0,0,.04);
-
-    position:relative;
-
+/* TYPOGRAPHY */
+.step-label {
+    font-size: var(--font-size-md);
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-/* branch line */
-
-.step-children::before{
-
-    content:"";
-
-    position:absolute;
-
-    left:-40px;
-    top:28px;
-
-    width:40px;
-    height:2px;
-
-    background:var(--border-light);
-
+.step-desc {
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-light);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+    color: var(--text-secondary);
 }
 
-/* arrow */
-
-.step-children::after{
-
-    content:"";
-
-    position:absolute;
-
-    left:-40px;
-    top:28px;
-
-    width:8px;
-    height:8px;
-
-    border-left:2px solid var(--border-light);
-    border-top:2px solid var(--border-light);
-
-    transform:rotate(-45deg);
-
-}
-
-/* =====================================
-   ACCESSIBILITY
-   ===================================== */
-
-@media(prefers-reduced-motion:reduce){
-
-.flow-step{
-animation:none;
-opacity:1;
-}
-
-.flow-container::before{
-animation:none;
-}
-
+/* 6. NESTED CHILDREN */
+.step-children {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 20px;
+    margin-left: 50px; /* Increased indent for clarity */
+    margin-right: 20px;
+    padding: 24px;
+    background: var(--bg-primary);
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    position: relative;
 }
 
 /* 7. MOBILE RESPONSIVE */
@@ -616,17 +434,21 @@ animation:none;
     
     .flow-container { padding: 10px 0; }
     
+    .step-box { width: 95%; /* Use more width on mobile */ }
+    
     .step-children {
         margin-left: 0; /* Centered on mobile */
         padding: 16px;
+        border-style: solid; /* Solid border easier to read than dashed on small screens */
     }
-    /* Hide branch lines on mobile for cleaner view */
+    
+    /* Hide branch lines for cleaner view */
     .step-children::before, .step-children::after {
         display: none;
     }
 }
 
-/* 8. DARK MODE */
+/* 8. DARK MODE (Glassmorphism Re-enabled only here) */
 @media (prefers-color-scheme: dark) {
     #archView {
         background-image: 
@@ -635,19 +457,16 @@ animation:none;
     }
 
     .flow-container::before {
-        opacity: 0.6; /* Brighter in dark mode */
-        background: linear-gradient(
-            to bottom,
-            var(--border-dark) 0%,
-            var(--accent-primary) 50%,
-            var(--border-dark) 100%
-        );
+        opacity: 0.6;
+        background-image: linear-gradient(to bottom, var(--border-dark) 0%, var(--accent-primary) 50%, var(--border-dark) 100%);
     }
 
     .step-box {
-        background: rgba(30, 41, 59, 0.95); /* Darker glass */
+        /* Re-enable blur for glass effect in dark mode */
+        background: rgba(30, 41, 59, 0.8); 
+        backdrop-filter: blur(10px); 
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
         border-color: var(--border-medium);
-        backdrop-filter: blur(8px);
     }
     
     .step-type-container .step-box {
