@@ -34,27 +34,24 @@ class ArchitectureManager {
         `).join('');
     }
 
-    
     // 2. Switch to Visualizer View
     async showVisual(archId) {
-        // 1. Ensure data is loaded before doing anything
         if (!this.isLoaded) {
             await this.init();
         }
 
-        // 2. Hide Content (Graph) and Sidebar, Show Arch View
         const content = document.getElementById('content');
         const sidebar = document.querySelector('.sidebar');
         
+        // FORCEFULLY hide the sidebar and content using inline styles
         if(content) content.style.display = 'none';
-        if(sidebar) sidebar.classList.add('hidden'); 
+        if(sidebar) sidebar.style.display = 'none'; 
         
         this.container.style.display = 'flex';
         this.container.classList.add('active');
 
-        // 3. Handle View Logic
         if (!archId) {
-            // --- SHOW GALLERY ---
+            // SHOW GALLERY
             const header = this.visualizerContainer.querySelector('.viz-header');
             header.innerHTML = `
                 <button class="viz-back-btn" onclick="window.archManager.hideVisual()">← Back to Graph</button>
@@ -63,11 +60,10 @@ class ArchitectureManager {
                     <p style="color: var(--text-tertiary);">Explore the blueprints of modern AI.</p>
                 </div>
             `;
-            // Ensure gallery is visible, visualizer is hidden
             this.visualizerContainer.style.display = 'none';
             this.galleryContainer.style.display = 'grid';
         } else {
-            // --- SHOW SPECIFIC ARCHITECTURE ---
+            // SHOW SPECIFIC ARCHITECTURE
             const arch = this.data.find(a => a.id === archId);
             if (!arch) return;
 
@@ -80,23 +76,27 @@ class ArchitectureManager {
                 </div>
             `;
 
-            // Render Flowchart
             const flowContainer = this.visualizerContainer.querySelector('.flow-container');
             flowContainer.innerHTML = this.renderSteps(arch.steps);
             
-            // Swap visibility
             this.galleryContainer.style.display = 'none';
             this.visualizerContainer.style.display = 'block';
         }
     }
-    
+
 
     // 3. Hide Visualizer (Return to Graph)
+
     hideVisual() {
         this.container.style.display = 'none';
         this.container.classList.remove('active');
-        document.getElementById('content').style.display = 'flex';
-        document.querySelector('.sidebar').classList.remove('hidden');
+        
+        // Restore visibility
+        const content = document.getElementById('content');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if(content) content.style.display = 'flex'; // Restore graph
+        if(sidebar) sidebar.style.display = 'flex'; // Restore sidebar
     }
 
     // 4. Recursive Function to Render Steps (Handles Nesting)
