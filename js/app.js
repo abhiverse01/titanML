@@ -180,19 +180,18 @@ class App {
 
         // ... sidebar toggle logic fixed above ...
 
+
         // ==========================================
         // ARCHITECTURE NAVIGATION LOGIC
         // ==========================================
         
         const archBtn = document.getElementById('navArchitecture');
         if (archBtn) {
-            archBtn.addEventListener('click', () => {
-                // 1. Initialise data if not loaded
+            archBtn.addEventListener('click', async () => { // Added 'async' here
+                // 1. Ensure window.archManager exists
                 if (window.archManager) {
-                    window.archManager.init();
-                    
-                    // 2. Switch View (Pass null to show the gallery list)
-                    window.archManager.showVisual(null);
+                    // 2. 'await' is crucial here to let data load before showing
+                    await window.archManager.showVisual(null);
                 } else {
                     console.error("Architecture Manager not found. Is architecture.js loaded?");
                 }
