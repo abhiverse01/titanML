@@ -3,70 +3,100 @@
     "id": "transformer",
     "name": "Transformer Architecture",
     "category": "NLP",
-    "shortDesc": "The neural network architecture underlying GPT, BERT, and modern LLMs.",
+    "shortDesc": "The neural network architecture underlying GPT, BERT, and modern LLMs, utilizing self-attention mechanisms.",
     "steps": [
       {
-        "label": "Input Embedding",
-        "desc": "Converts input tokens into dense vectors of dimension d_model.",
-        "type": "process"
+        "label": "Tokenization & Embedding",
+        "desc": "Raw text is split into tokens and converted into dense vectors of fixed dimension.",
+        "type": "start"
       },
       {
         "label": "Positional Encoding",
-        "desc": "Injects information about the order of the tokens since the model has no recurrence.",
+        "desc": "Adds positional information to embeddings since the model has no inherent sense of order.",
         "type": "process"
       },
       {
         "label": "Encoder Stack (xN)",
-        "desc": "A stack of identical layers. Each layer has two sub-layers.",
+        "desc": "A stack of identical layers processing the input sequence in parallel.",
         "type": "container",
         "children": [
           {
             "label": "Multi-Head Self-Attention",
-            "desc": "Allows the model to attend to different positions in the input sequence simultaneously.",
+            "desc": "Allows the model to attend to different positions in the sequence to capture contextual relationships.",
             "type": "highlight"
           },
           {
             "label": "Add & Norm",
-            "desc": "Residual connection followed by Layer Normalisation.",
+            "desc": "Applies residual connections followed by Layer Normalization to stabilize training and gradient flow.",
             "type": "process"
           },
           {
             "label": "Feed Forward Network",
-            "desc": "Two linear transformations with a ReLU activation.",
+            "desc": "Two linear transformations with a non-linear activation function (e.g., ReLU or GELU).",
             "type": "process"
           }
         ]
       },
       {
-        "label": "Output Probabilities",
-        "desc": "Linear layer followed by Softmax to generate probability distribution over vocabulary.",
-        "type": "end"
+        "label": "Decoder Stack (xN)",
+        "desc": "Generates the output sequence one token at a time, attending to previously generated tokens and the encoder output.",
+        "type": "container",
+        "children": [
+            {
+                "label": "Masked Self-Attention",
+                "desc": "Attention mechanism that prevents the model from seeing future tokens during training.",
+                "type": "highlight"
+            },
+            {
+                "label": "Decoder Cross-Attention",
+                "desc": "Attends to the final output of the Encoder stack.",
+                "type": "process"
+            },
+            {
+                "label": "Output Projection",
+                "desc": "Projects hidden states into the vocabulary space to predict the next token.",
+                "type": "end"
+            }
+        ]
       }
     ]
   },
   {
     "id": "neural-net",
-    "name": "Basic Neural Network",
+    "name": "Neural Network (FFNN)",
     "category": "Deep Learning",
-    "shortDesc": "The fundamental building block of Deep Learning: Input Layers, Hidden Layers, and Output Layers.",
+    "shortDesc": "The foundational architecture for Deep Learning, consisting of an Input, Hidden, and Output layer.",
     "steps": [
       {
         "label": "Input Layer",
-        "desc": "Receives the raw data features.",
+        "desc": "Receives the raw data features and passes them to the hidden layer.",
         "type": "start"
       },
       {
-        "label": "Hidden Layers (Deep)",
-        "desc": "Layers where computations and feature extraction happen using weights and biases.",
+        "label": "Hidden Layers",
+        "desc": "Layers where weights and biases are applied to extract non-linear features.",
         "type": "container",
         "children": [
-          { "label": "Weighted Sum", "type": "process" },
-          { "label": "Activation Function (ReLU/Sigmoid)", "type": "highlight" }
+          {
+            "label": "Weighted Sum",
+            "desc": "Calculates dot product of inputs and weights plus bias term.",
+            "type": "process"
+          },
+          {
+            "label": "Activation Function",
+            "desc": "Introduces non-linearity (e.g., ReLU, Sigmoid) to the network.",
+            "type": "highlight"
+          },
+          {
+            "label": "Dropout",
+            "desc": "Randomly deactivates neurons during training to prevent overfitting.",
+            "type": "process"
+          }
         ]
       },
       {
         "label": "Output Layer",
-        "desc": "Produces the final prediction (class or value).",
+        "desc": "Produces final probabilities (classification) or continuous values (regression).",
         "type": "end"
       }
     ]
@@ -75,27 +105,295 @@
     "id": "rag",
     "name": "RAG Architecture",
     "category": "Generative AI",
-    "shortDesc": "Retrieval-Augmented Generation: Enhances LLMs by retrieving external data.",
+    "shortDesc": "Retrieval-Augmented Generation enhances LLMs by dynamically retrieving external knowledge from a vector database.",
     "steps": [
       {
-        "label": "User Query",
-        "desc": "The question asked by the user.",
+        "label": "User Prompt",
+        "desc": "The user's question or query.",
         "type": "start"
       },
       {
         "label": "Retriever",
-        "desc": "Searches a vector database for relevant documents.",
+        "desc": "Encodes the query and searches a Vector Database for relevant documents.",
         "type": "process"
       },
       {
-        "label": "Context Injection",
-        "desc": "Combines the user query with the retrieved documents.",
+        "label": "Prompt Augmentation",
+        "desc": "Injects the retrieved documents into the user's prompt to provide context.",
         "type": "process"
       },
       {
-        "label": "LLM Generator",
-        "desc": "Generates the final answer based on the augmented prompt.",
+        "label": "LLM Generation",
+        "desc": "The Language Model generates an answer based on the augmented context and query.",
         "type": "highlight"
+      }
+    ]
+  },
+  {
+    "id": "cnn",
+    "name": "Convolutional Neural Network (CNN)",
+    "category": "Computer Vision",
+    "shortDesc": "A specialized architecture for processing grid-like data such as images, using filters and pooling.",
+    "steps": [
+      {
+        "label": "Input Image",
+        "desc": "The raw pixel data (Height x Width x Channels).",
+        "type": "start"
+      },
+      {
+        "label": "Convolutional Layer",
+        "desc": "Applies learnable filters (kernels) to the input to extract features like edges and textures.",
+        "type": "container",
+        "children": [
+            {
+            "label": "Convolution Operation",
+            "desc": "Element-wise multiplication of the kernel with the input patch.",
+              "type": "process"
+          },
+          {
+            "label": "ReLU Activation",
+            "desc": "Introduces non-linearity to the network.",
+              "type": "highlight"
+          }
+        ]
+      },
+      {
+        "label": "Pooling Layer",
+        "desc": "Reduces the spatial dimensions (Downsampling) to decrease computation and control overfitting.",
+        "type": "process"
+      },
+      {
+        "label": "Flattening",
+        "desc": "Converts the 3D feature maps into a 1D vector for the fully connected layers.",
+        "type": "process"
+      },
+      {
+        "label": "Output Layer",
+        "desc": "Final fully connected layer to produce class probabilities or values.",
+        "type": "end"
+      }
+    ]
+  },
+  {
+    "id": "unet",
+    "name": "U-Net Architecture",
+    "category": "Computer Vision",
+    "shortDesc": "A symmetrical architecture commonly used for image segmentation, featuring a contracting path and an expanding path.",
+    "steps": [
+      {
+        "label": "Input Image",
+        "desc": "The source image to be segmented.",
+        "type": "start"
+      },
+      {
+        "label": "Contracting Path (Encoder)",
+        "desc": "Downsamples the image to extract context features using Conv and Pooling.",
+        "type": "container",
+        "children": [
+          {
+            "label": "Double Convolution",
+            "desc": "Two unpadded convolutions to preserve spatial information.",
+            "type": "process"
+          },
+          {
+            "label": "Max Pooling",
+            "desc": "Reduces the height and width, capturing the most important features.",
+            "type": "process"
+          }
+        ]
+      },
+      {
+        "label": "Bottleneck",
+        "desc": "The feature vector passed from the encoder to the decoder.",
+        "type": "process"
+      },
+      {
+        "label": "Expanding Path (Decoder)",
+        "desc": "Upsamples the feature map back to the original input resolution using transposed convolutions.",
+        "type": "container",
+        "children": [
+          {
+            "label": "Transposed Convolution",
+            "desc": "Upsamples the feature map using learned filters.",
+            "type": "highlight"
+          },
+          {
+            "label": "Concatenation",
+            "desc": "Combines upsampled features with the skip connections from the encoder.",
+            "type": "process"
+          },
+          {
+            "label": "Double Convolution",
+            "desc": "Refines the upsampled features to recover spatial details.",
+            "type": "process"
+          }
+        ]
+      },
+      {
+        "label": "Output Mask",
+        "desc": "1x1 Conv layer that maps features to class probabilities for each pixel.",
+        "type": "end"
+      }
+    ]
+  },
+  {
+    "id": "gan",
+    "name": "Generative Adversarial Network (GAN)",
+    "category": "Generative AI",
+    "shortDesc": "A framework where two neural networks compete: a Generator creating fake data and a Discriminator distinguishing real from fake.",
+    "steps": [
+      {
+        "label": "Random Noise Vector",
+        "desc": "A random noise vector (e.g., Gaussian) acts as the seed for generation.",
+        "type": "start"
+      },
+      {
+        "label": "Generator Network",
+        "desc": "Takes noise as input and generates a synthetic data sample (e.g., a fake image).",
+        "type": "highlight"
+      },
+      {
+        "label": "Discriminator Network",
+        "desc": "Takes both real data and fake samples as input and outputs a probability of realness.",
+        "type": "container",
+        "children": [
+          {
+            "label": "Real Data In",
+            "desc": "Passes a real sample from the training set.",
+            "type": "process"
+          },
+          {
+            "label": "Fake Data In",
+            "desc": "Passes the generated sample from the Generator.",
+            "type": "process"
+          }
+        ]
+      },
+      {
+        "label": "Backpropagation",
+        "desc": "Gradients are calculated based on the Discriminator's feedback to update the Generator.",
+        "type": "process"
+      }
+    ]
+  },
+  {
+    "id": "lstm",
+    "name": "Long Short-Term Memory (LSTM)",
+    "category": "Deep Learning",
+    "shortDesc": "A Recurrent Neural Network (RNN) designed to process sequences of data by maintaining an internal 'Cell State'.",
+    "steps": [
+      {
+        "label": "Input Sequence",
+        "desc": "The sequence of data (e.g., a sentence) fed into the network.",
+        "type": "start"
+      },
+      {
+        "label": "Forget Gate",
+        "desc": "Decides what information to throw away from the cell state.",
+        "type": "highlight"
+      },
+      {
+        "label": "Input Gate",
+        "desc": "Decides what new information from the current input to store in the cell state.",
+        "type": "highlight"
+      },
+      {
+        "label": "Cell State Update",
+        "desc": "Calculates the new candidate cell state and hidden state to be carried forward.",
+        "type": "process"
+      },
+      {
+        "label": "Output Gate",
+        "desc": "Decides what part of the cell state to expose to the next layer.",
+        "type": "highlight"
+      },
+      {
+        "label": "Hidden State",
+        "desc": "The output passed to the next time step.",
+        "type": "end"
+      }
+    ]
+  },
+  {
+    "id": "autoencoder",
+    "name": "Autoencoder",
+    "category": "Unsupervised Learning",
+    "shortDesc": "An architecture trained to copy its input to its output, used for dimensionality reduction and feature learning.",
+    "steps": [
+      {
+        "inputId": "input_image",
+        "label": "Input Data",
+        "desc": "The raw data (e.g., image or text) passed into the network.",
+        "type": "start"
+      },
+      {
+        "label": "Encoder",
+        "desc": "Compresses the input into a lower-dimensional 'Bottleneck' representation.",
+        "type": "container",
+        "children": [
+          {
+            "label": "Encoder Conv Layers",
+            "desc": "Layers that extract features and reduce spatial dimensions.",
+            "type": "process"
+          },
+          {
+            "label": "Bottleneck Layer",
+            "desc": "The compressed latent space vector containing the essential information.",
+            "type": "highlight"
+          }
+        ]
+      },
+      {
+        "label": "Decoder",
+        "desc": "Reconstructs the input from the bottleneck vector.",
+        "type": "container",
+        "children": [
+          {
+            "label": "Decoder Conv Layers",
+            "desc": "Layers that upsample the bottleneck back to the original dimensions.",
+            "type": "process"
+          },
+          {
+            "label": "Output",
+            "desc": "The reconstructed data.",
+            "type": "end"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "diffusion",
+    "name": "Diffusion Model (DDPM)",
+    "forward process": "Generative AI",
+    "shortDesc": "Generates data (like images) by gradually removing noise from random static.",
+    "steps": [
+      {
+        "label": "Input Noise",
+        "desc": "Start with pure random noise (Gaussian distribution).",
+        "type": "start"
+      },
+      {
+        "label": "Forward Diffusion Process",
+        "desc": "Iteratively adds noise to the data over T steps.",
+        "type": "container",
+        "children": [
+          {
+            "label": "Step t (T to 1)",
+            "desc": "Adds a small amount of Gaussian noise to the data sample.",
+            "type": "process"
+          }
+        ]
+      },
+      {
+        "label": "Reverse Diffusion (Inference)",
+        "desc": "The neural network (U-Net) learns to predict the noise added at each step.",
+        "type": "highlight"
+      },
+      {
+        "label": "Denoising",
+        "desc": "Predicts the noise to subtract, gradually restoring the structured data.",
+        "type": "end"
       }
     ]
   }
