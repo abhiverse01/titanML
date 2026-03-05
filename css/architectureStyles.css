@@ -1,5 +1,5 @@
 /* ==========================================
-   ARCHITECTURE VISUALIZER (GOD MODE v3.5 - FIXED)
+   ARCHITECTURE VISUALIZER (GOD MODE V5 - PRO)
    ========================================== */
 
 /* 1. MAIN CONTAINER */
@@ -14,11 +14,11 @@
     overflow-x: hidden;
     display: none;
     
-    /* Tech Grid */
+    /* Subtle Tech Grid */
     background-image: 
         linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-    background-size: 32px 32px;
+    background-size: 30px 30px;
 }
 
 /* Custom Scrollbar */
@@ -27,33 +27,30 @@
 #archView::-webkit-scrollbar-thumb { 
     background: var(--border-medium); 
     border-radius: 3px; 
-    border: 2px solid transparent; 
-    background-clip: content-box; 
 }
 #archView::-webkit-scrollbar-thumb:hover { background: var(--border-dark); }
 
 /* 2. WRAPPER */
 .arch-visualizer, .arch-gallery {
     width: 100%;
-    max-width: 100%;
     padding-top: calc(var(--header-height) + 20px);
     padding-left: 20px;
     padding-right: 20px;
-    padding-bottom: 80px;
+    padding-bottom: 60px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-/* 3. VISUALIZER HEADER */
+/* 3. HEADER (Flexbox for Alignment) */
 .viz-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    max-width: 1200px;
-    margin-bottom: 50px;
+    max-width: 1000px; /* Reduced max-width for better balance */
+    margin-bottom: 60px;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--border-light);
     animation: slideDown 0.4s ease-out;
@@ -66,24 +63,23 @@
 
 .viz-title-group { display: flex; flex-direction: column; }
 
+/* BACK BUTTON (Right Aligned) */
 .viz-back-btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: transparent;
+    background: var(--bg-tertiary);
     border: 1px solid var(--border-medium);
     color: var(--text-secondary);
     padding: 8px 20px;
     border-radius: 20px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: var(--shadow-sm);
-    white-space: nowrap;
-    margin-left: 20px;
+    margin-left: 20px; /* Space from title */
 }
 
 .viz-back-btn:hover {
@@ -110,35 +106,36 @@
     border-radius: var(--radius-xl);
     padding: 24px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
     position: relative;
     overflow: hidden;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: var(--shadow-sm);
     min-height: 200px;
     display: flex;
     flex-direction: column;
     align-self: stretch;
 }
 
-.arch-card:hover {
-    transform: translateY(-6px);
-    border-color: var(--accent-primary);
-    box-shadow: 0 10px 30px rgba(8, 145, 178, 0.15);
-    background: #fff;
-}
-
-/* Card Accents */
+/* Tech Corner */
 .arch-card::after {
     content: '';
     position: absolute;
     top: 0; right: 0;
-    width: 24px; height: 24px;
-    border-top: 3px solid var(--accent-primary);
-    border-right: 3px solid var(--accent-primary);
+    width: 20px; height: 20px;
+    border-top: 2px solid var(--accent-primary);
+    border-right: 2px solid var(--accent-primary);
     border-top-right-radius: var(--radius-xl);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
+
+.arch-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent-primary);
+    box-shadow: 0 12px 30px rgba(8, 145, 178, 0.15);
+    background: #fff; /* Solid white on hover */
+}
+
 .arch-card:hover::after { opacity: 1; }
 
 .arch-card::before {
@@ -150,18 +147,19 @@
     transform-origin: left;
     transition: transform 0.3s ease;
 }
+
 .arch-card:hover::before { transform: scaleX(1); }
 
 /* Typography */
 .arch-category {
     display: inline-block;
     font-size: var(--font-size-xs);
-    font-weight: 800;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--accent-primary);
-    background: rgba(8, 145, 178, 0.1);
-    padding: 5px 12px;
+    background: rgba(8, 145, 178, 0.08);
+    padding: 4px 10px;
     border-radius: 6px;
     margin-bottom: 12px;
     align-self: flex-start;
@@ -189,221 +187,197 @@
     text-overflow: ellipsis;
 }
 
-/* 5. FLOWCHART ENGINE (GOD MODE: NEURAL SPINE - FIXED) */
+/* ==========================================
+   5. FLOWCHART ENGINE (GOD MODE V5: PRO SPINE)
+   ========================================== */
+
 .flow-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
-    max-width: 920px;
-    margin: 0 auto; /* Centered */
+    max-width: 900px;
+    padding: 20px 0 60px 0; /* Top/bottom padding */
     position: relative;
-    padding: 40px 0; /* Vertical padding */
 }
 
-/* THE CENTRAL SPINE (Full Height) */
+/* THE CENTRAL SPINE (The Line) */
 .flow-container::before {
     content: '';
     position: absolute;
-    inset: 0; /* Covers full height of container */
+    top: 0;
+    bottom: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 2px;
-    
-    background: linear-gradient(
-        to bottom,
-        transparent 0%,
-        var(--accent-primary) 50%,
-        transparent 100%
-    );
+    /* Pulsing Gradient */
+    background: linear-gradient(to bottom, transparent, var(--accent-primary), transparent);
     background-size: 100% 200%;
-    
+    opacity: 0.3;
+    animation: spineFlow 3s linear infinite;
     z-index: 0;
-    
-    /* Stronger Glow */
-    box-shadow: 0 0 15px rgba(8, 145, 178, 0.3);
-    
-    animation: spineFlow 4s linear infinite;
-    opacity: 0.4;
 }
 
 @keyframes spineFlow {
-    0% { background-position: 0% -200%; opacity: 0.4; }
-    50% { opacity: 1; }
-    100% { background-position: 0% 200%; opacity: 0.4; }
+    0% { background-position: 0% -200%; opacity: 0.3; }
+    50% { opacity: 0.8; }
+    100% { background-position: 0% 200%; opacity: 0.3; }
 }
 
-/* NODE CARD */
+/* FLOW STEP */
 .flow-step {
     width: 100%;
-    margin-bottom: 48px; /* Space for arrows */
+    display: flex;
+    justify-content: center;
     position: relative;
+    margin-bottom: 50px; /* Increased spacing for visual clarity */
+    
     opacity: 0;
     animation: nodeReveal 0.6s ease forwards;
-    z-index: 2; /* Above spine */
+    animation-delay: calc(var(--step-index, 0) * 100ms);
 }
 
-/* Stagger */
+/* Stagger Fallbacks */
 .flow-step:nth-child(1) { animation-delay: 0.1s; }
 .flow-step:nth-child(2) { animation-delay: 0.2s; }
 .flow-step:nth-child(3) { animation-delay: 0.3s; }
 .flow-step:nth-child(4) { animation-delay: 0.4s; }
+.flow-step:nth-child(5) { animation-delay: 0.5s; }
 
 @keyframes nodeReveal {
-    from {
-        opacity: 0;
-        transform: translateY(30px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+    from { opacity: 0; transform: translateY(30px); filter: blur(4px); }
+    to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
-/* THE BOX (Solid White - Fixes Darkness Issue) */
+/* THE NODE (Data Chip Aesthetic) */
 .step-box {
-    width: min(90%, 700px);
+    /* Width Control: Centered, but max width 600px for readability */
+    width: 100%;
+    max-width: 600px;
+    min-height: 80px;
     
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     
-    /* FIX: Solid White Background for Readability in Light Mode */
-    background: #ffffff; 
-    border: 1px solid var(--border-light);
-    border-radius: 16px;
+    padding: 24px 32px;
     
-    padding: 26px 34px;
+    /* CRITICAL FIX: Solid Colors */
+    background-color: #ffffff; /* Pure white in Light Mode */
+    border: 1px solid var(--border-light);
+    border-radius: 12px; /* Slightly rounded tech corners */
     
     position: relative;
-    z-index: 2;
+    z-index: 2; /* Above spine */
     
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    min-height: 80px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Hover: Neon Activation */
+/* Subtle Gradient Sheen (Light Mode Only) */
+.step-box::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.8), transparent);
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.5; /* Subtle shine */
+}
+
+/* HOVER EFFECT */
 .step-box:hover {
-    transform: scale(1.03);
-    /* FIX: Stronger, Cleaner Glow */
-    box-shadow: 0 0 0 1px var(--accent-primary), 0 20px 50px rgba(8, 145, 178, 0.25);
+    transform: translateY(-4px) scale(1.02);
     border-color: var(--accent-primary);
-    z-index: 10; /* On top of everything */
+    
+    /* Stronger Glow */
+    box-shadow: 0 0 0 1px var(--accent-primary), 
+                0 12px 30px rgba(8, 145, 178, 0.25);
+                
+    background-color: #fff; /* Ensure pure white */
+    z-index: 10; /* Bring to very front */
 }
 
-/* Status Light */
+/* STATUS INDICATOR (The Dot) */
 .step-box::before {
     content: '';
     position: absolute;
-    top: -7px; /* Lifted slightly */
+    top: -8px; /* Adjusted for spacing */
     left: 50%;
     transform: translateX(-50%);
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     background: var(--border-medium);
     border-radius: 50%;
-    border: 2px solid #fff; /* Border matches box bg */
+    border: 2px solid #fff; /* Matches background */
     transition: all 0.3s;
+    z-index: 10;
 }
 
 .step-box:hover::before {
     background: var(--accent-success);
-    border-color: var(--bg-primary);
+    border-color: #fff;
     box-shadow: 0 0 10px var(--accent-success);
 }
 
-/* CONNECTORS (Fixed Alignment) */
+/* CONNECTORS */
 .flow-step:not(:last-child)::after {
     content: '';
     position: absolute;
-    bottom: -48px; /* Adjusted for margin-bottom: 48px */
+    bottom: -50px; /* Connects to next box (matches margin-bottom) */
     left: 50%;
     transform: translateX(-50%);
     width: 2px;
-    height: 38px; /* Adjusted height */
+    height: 50px; /* Length of the line */
     background: var(--border-medium);
     z-index: 1;
 }
 
+/* Arrow Head */
 .flow-step:not(:last-child)::before {
     content: '';
     position: absolute;
-    bottom: -10px; /* Arrow head position adjustment */
+    bottom: -50px; /* Bottom of the line */
     left: 50%;
-    transform: translateX(-50%) translateY(15px);
+    transform: translateX(-50%) translateY(25px); /* Halfway down the line */
     border-left: 6px solid transparent;
     border-right: 6px solid transparent;
     border-top: 8px solid var(--border-medium);
-    z-index: 1;
+    z-index: 2;
 }
 
-/* 6. NESTED CHILDREN (Container/Group) */
-/* This is the box containing sub-steps */
-.step-children {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    margin-top: 20px;
-    margin-left: 40px; /* Indent creates the branching look */
-    margin-right: 20px;
-    padding: 24px;
-    
-    background: var(--bg-tertiary); /* Distinct Light Grey */
-    border: 1px dashed var(--border-medium);
-    border-radius: 16px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-    position: relative;
-}
+/* STEP TYPES (Professional Shapes) */
 
-/* Branch Line Styling (Visual Flair) */
-.step-children::before {
-    /* Horizontal Line connecting Spine to Container */
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: -40px; /* Connects spine to left of container */
-    width: 40px;
-    height: 2px;
-    background: var(--border-light);
-    z-index: 1;
-}
-
-.step-children::after {
-    /* Corner piece */
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: -40px;
-    width: 8px;
-    height: 8px;
-    border-top: 2px solid var(--border-light);
-    border-left: 2px solid var(--border-light);
-    transform: translateY(-50%) rotate(-45deg);
-    z-index: 1;
-}
-
-/* STEP TYPES */
+/* START: Pill */
 .step-type-start .step-box {
-    border-radius: 30px; /* Pill */
-    background: linear-gradient(135deg, #ffffff, rgba(16, 185, 129, 0.05)); /* White to Tint */
+    border-radius: 60px;
     border: 2px solid var(--accent-success);
+    /* Subtle Green Tint Background */
+    background: linear-gradient(135deg, #ffffff, rgba(16, 185, 129, 0.08));
 }
 
+/* END: Pill */
 .step-type-end .step-box {
-    border-radius: 30px;
-    background: linear-gradient(135deg, #ffffff, rgba(239, 68, 68, 0.05));
+    border-radius: 60px;
     border: 2px solid var(--accent-danger);
+    /* Subtle Red Tint Background */
+    background: linear-gradient(135deg, #ffffff, rgba(239, 68, 68, 0.08));
 }
 
+/* HIGHLIGHT: Tech Box */
 .step-type-highlight .step-box {
     border: 1px solid var(--accent-primary);
+    border-left: 4px solid var(--accent-primary); /* Accent Bar */
+    /* Subtle Blue Tint Background */
     background: linear-gradient(135deg, #ffffff, rgba(8, 145, 178, 0.05));
 }
 
+/* CONTAINER: Dashed Group Box */
 .step-type-container .step-box {
-    background: var(--bg-tertiary);
+    background: #f8fafc; /* Slate 50 (Very Light Grey) */
     border: 1px dashed var(--border-medium);
 }
 
@@ -416,48 +390,90 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     position: relative;
-    z-index: 2;
+    z-index: 10;
 }
 
 .step-desc {
     font-size: var(--font-size-sm);
-    color: var(--text-secondary); /* Darker text for contrast against white */
+    color: var(--text-secondary);
     line-height: 1.6;
-    margin-top: 8px;
+    margin-top: 10px;
     padding-top: 12px;
     border-top: 1px solid var(--border-light);
+    position: relative;
+    z-index: 10;
+}
+
+/* 6. NESTED CHILDREN (The Branch) */
+.step-children {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 20px;
+    margin-left: 40px; /* The Indent */
+    margin-right: 20px;
+    padding: 20px;
+    background: #f1f5f9; /* Slate 100 (Light Grey) */
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    position: relative;
+}
+
+/* Branch Line (Horizontal) */
+.step-children::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -41px; /* Connects exactly to parent edge */
+    width: 41px;
+    height: 2px;
+    background: var(--border-light);
+    transform: translateY(-50%);
+    z-index: 0;
+}
+
+/* Branch Corner */
+.step-children::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -41px;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid var(--border-light);
+    border-left: 2px solid var(--border-light);
+    transform: translateY(-50%) rotate(-45deg);
+    z-index: 0;
 }
 
 /* 7. MOBILE RESPONSIVE */
 @media (max-width: 768px) {
     #archView { z-index: 200; }
     
-    /* Center content on mobile */
-    .flow-container { padding: 20px 10px; }
+    .flow-container { padding: 10px 0; }
     
-    .step-box { width: 95%; }
-    
-    /* No branching lines on mobile for simplicity */
     .step-children {
-        margin-left: 0;
+        margin-left: 0; /* Centered on mobile */
         padding: 16px;
-        margin-top: 16px;
+        background: transparent; /* Remove background for cleaner look */
+        border: 1px dashed var(--border-medium);
     }
-    
+    /* Hide branch lines on mobile */
     .step-children::before, .step-children::after {
         display: none;
     }
 }
 
-/* 8. DARK MODE (Tweaked for Readability) */
+/* 8. DARK MODE (God Mode Colors) */
 @media (prefers-color-scheme: dark) {
+    /* Darker Grid */
     #archView {
         background-image: 
             linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     }
 
-    /* Brighten Spine in Dark Mode */
     .flow-container::before {
         opacity: 0.6;
         background: linear-gradient(
@@ -468,22 +484,32 @@
         );
     }
 
-    /* Box Colors */
+    /* FIX: Dark Mode Boxes */
     .step-box {
-        /* Use a slightly lighter slate than default for contrast */
-        background: var(--bg-secondary); 
+        background-color: var(--bg-secondary); /* Solid dark blue-grey */
         border-color: var(--border-medium);
-        /* Remove glassmorphism in dark mode if it looks muddy */
-        backdrop-filter: none; 
+        /* Remove gradient sheen to keep it clean */
     }
-    
-    /* Fix Container Color */
+    .step-box::after { display: none; }
+
+    .step-type-start .step-box {
+        background: linear-gradient(135deg, var(--bg-secondary), rgba(16, 185, 129, 0.2));
+    }
+
+    .step-type-end .step-box {
+        background: linear-gradient(135deg, var(--bg-secondary), rgba(239, 68, 68, 0.2));
+    }
+
+    .step-type-highlight .step-box {
+        background: linear-gradient(135deg, var(--bg-secondary), rgba(8, 145, 178, 0.2));
+    }
+
     .step-type-container .step-box {
-        background: rgba(30, 41, 59, 0.5); /* Darker semi-transparent */
+        background: rgba(30, 41, 59, 0.8); /* Solid dark */
     }
 
     .step-children {
-        background: rgba(15, 23, 42, 0.6);
+        background: rgba(15, 23, 42, 0.8);
         border-color: var(--border-medium);
     }
 }
