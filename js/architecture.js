@@ -27,8 +27,6 @@ class ArchitectureManager {
             console.log('Architecture Manager Loaded:', this.data.length, 'architectures');
         } catch (error) {
             console.error('Architecture Manager Error:', error);
-            // Fallback if JSON fails (for testing)
-            console.warn("Ensure data/architecture.json exists and is valid JSON.");
         }
     }
 
@@ -58,7 +56,6 @@ class ArchitectureManager {
         }
     }
 
-    // Handles Back button clicks anywhere inside #archView
     handleViewClick(e) {
         if (e.target.closest('.viz-back-btn')) {
             this.handleBackClick();
@@ -113,10 +110,8 @@ class ArchitectureManager {
             history.pushState({ mode: 'architecture' }, '', '#arch');
         }
 
-        // 4. Render Content
-        // We use 'this.container' (Parent) to find the Header, because Header is a sibling of Visualizer
+        // 4. Get the Header (Sibling of visualizer)
         const header = this.container.querySelector('.viz-header');
-        const flowContainer = this.visualizerContainer.querySelector('.flow-container');
 
         if (!archId) {
             // --- SHOW GALLERY ---
@@ -129,6 +124,8 @@ class ArchitectureManager {
                     </div>
                 `;
             }
+            // Clear visualizer, show gallery
+            this.visualizerContainer.innerHTML = ''; 
             this.visualizerContainer.style.display = 'none';
             this.galleryContainer.style.display = 'grid';
         } else {
@@ -149,11 +146,13 @@ class ArchitectureManager {
                 `;
             }
 
-            if (flowContainer) {
-                flowContainer.innerHTML = this.renderSteps(arch.steps);
-            } else {
-                console.error("Flow container not found!");
-            }
+            // FIX: Instead of finding a child, we inject the ENTIRE structure 
+            // including the .flow-container class needed for CSS
+            this.visualizerContainer.innerHTML = `
+                <div class="flow-container">
+                    ${this.renderSteps(arch.steps)}
+                </div>
+            `;
             
             this.galleryContainer.style.display = 'none';
             this.visualizerContainer.style.display = 'block';
