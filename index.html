@@ -34,6 +34,7 @@
     <link rel="preload" href="js/data.js" as="script">
     <link rel="preload" href="js/graph.js" as="script">
     <link rel="preload" href="js/app.js" as="script">
+    <link rel="preload" href="js/architecture.js" as="script">
 
     <!-- Inline styles for Loader, Footer, and Dark Mode -->
     <style>
@@ -444,21 +445,23 @@
         }
 
         loadScript("js/data.js", (err)=>{ if(err) return; 
-            loadScript("js/graph.js", (err)=>{ if(err) return; 
-                loadScript("js/app.js", (err)=>{ if(err) return; 
-                    setTimeout(()=>{ 
-                        const loader = document.getElementById('initial-loader');
-                        if(window.app && window.app.initialized){ 
-                            console.log("🚀 App is running."); 
-                            if(loader) loader.classList.add('hidden');
-                            clearInterval(emojiInterval); // Stop emoji rotation
-                        } else { console.error("❌ App failed to initialize."); }
-                    }, 500);
+            loadScript("js/graph.js", (err)=>{ if(err) return;
+                loadScript("js/architecture.js", (err)=>{ if(err) return;
+                    loadScript("js/app.js", (err)=>{ if(err) return; 
+                        setTimeout(()=>{ 
+                            const loader = document.getElementById('initial-loader');
+                            if(window.app && window.app.initialized){ 
+                                console.log("🚀 App is running."); 
+                                if(loader) loader.classList.add('hidden');
+                                clearInterval(emojiInterval); // Stop emoji rotation
+                            } else { console.error("❌ App failed to initialize."); }
+                        }, 500);
+                    });
                 });
             });
         });
 
-        // Keyboard shortcut '/' focuses search
+        // Keyboard shortcut '/' focuses the search
         document.addEventListener('keydown', (e)=>{
             if(e.key === '/' && !e.ctrlKey && !e.metaKey){
                 e.preventDefault();
