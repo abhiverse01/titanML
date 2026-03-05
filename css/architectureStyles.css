@@ -1,0 +1,235 @@
+/* ==========================================
+   ARCHITECTURE VISUALIZER THEME
+   ========================================== */
+
+/* 1. GALLERY GRID */
+.arch-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.arch-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.arch-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-primary);
+}
+
+.arch-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 4px; height: 100%;
+    background: var(--accent-primary);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.arch-card:hover::before { opacity: 1; }
+
+.arch-category {
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    color: var(--accent-primary);
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+}
+
+.arch-title {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.arch-desc {
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+    line-height: 1.5;
+}
+
+/* 2. VISUALIZER CONTAINER */
+.arch-visualizer {
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    height: 100%;
+    padding: 20px;
+    overflow-y: auto;
+    background: var(--bg-primary);
+}
+
+.arch-visualizer.active { display: flex; }
+
+.viz-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.viz-back-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-right: 16px;
+    transition: all 0.2s;
+}
+
+.viz-back-btn:hover {
+    background: var(--bg-hover);
+    color: var(--accent-primary);
+}
+
+/* 3. FLOWCHART ENGINE */
+.flow-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Generic Step */
+.flow-step {
+    width: 100%;
+    margin-bottom: 24px;
+    position: relative;
+}
+
+/* The Box */
+.step-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    position: relative;
+    z-index: 2;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.step-box:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.1);
+}
+
+/* Arrow Down Connector */
+.flow-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 24px;
+    background: var(--border-medium);
+    z-index: 1;
+}
+
+.flow-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    bottom: -24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px); /* Center of the line */
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--border-medium);
+    z-index: 2;
+}
+
+/* Step Types */
+.step-type-start .step-box {
+    border-left: 4px solid var(--accent-success);
+    border-radius: 20px;
+    text-align: center;
+}
+
+.step-type-end .step-box {
+    border-left: 4px solid var(--accent-danger);
+    border-radius: 20px;
+    text-align: center;
+}
+
+.step-type-highlight .step-box {
+    background: linear-gradient(135deg, rgba(8,145,178,0.05), rgba(99,102,241,0.05));
+    border: 1px solid var(--accent-primary);
+}
+
+.step-type-container .step-box {
+    background: var(--bg-tertiary);
+    border: 1px dashed var(--border-medium);
+}
+
+.step-label {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.step-desc {
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+    display: none; /* Hidden by default for clean view */
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-light);
+}
+
+/* Show description on hover */
+.step-box:hover .step-desc {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+/* 4. NESTED CHILDREN (For Complex Architectures) */
+.step-children {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .arch-gallery {
+        grid-template-columns: 1fr;
+        padding: 16px;
+    }
+    
+    .step-desc {
+        display: block; /* Always show on mobile, no hover */
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
