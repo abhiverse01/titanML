@@ -74,6 +74,28 @@
         .creator-link svg { width: 14px; height: 14px; }
         .copyright-text { text-align: center; font-size: 10px; color: var(--text-muted, #94a3b8); opacity: 0.7; }
 
+        /* Dark Mode Button Style */
+        #themeToggle {
+            width: 100%;
+            font-size: 11px;
+            padding: 8px;
+            margin-top: 4px;
+            background: var(--bg-tertiary, #f1f5f9);
+            border: 1px solid var(--border-light, #e2e8f0);
+            border-radius: 6px;
+            color: var(--text-secondary, #475569);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        #themeToggle:hover {
+            background: var(--bg-active, #e2e8f0);
+            color: var(--accent-primary, #0891b2);
+        }
+
         /* Desktop view note */
         #desktopNote { 
             position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
@@ -95,11 +117,253 @@
 
     <!-- Main App Wrapper -->
     <div id="app" class="app">
-        <!-- Header, Sidebar, Content, Panels, Modals remain exactly as in your original index.html -->
-        <!-- Add Dark Mode Toggle in Footer -->
-        <div class="sidebar-footer">
-            <button id="themeToggle" style="font-size:11px;padding:4px 8px;margin-top:6px;">🌙 Dark Mode</button>
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>
+                            <circle cx="12" cy="12" r="9" stroke-dasharray="4 2"/>
+                        </svg>
+                    </div>
+                    <span class="logo-text">TitanML</span>
+                </div>
+            </div>
+            
+            <div class="header-center">
+                <div class="search-wrapper">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search concepts, terms, relationships..." aria-label="Search">
+                    <kbd class="search-kbd">/</kbd>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <button class="btn btn-ghost" id="toggleSidebar" aria-label="Toggle sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M9 3v18"/>
+                    </svg>
+                </button>
+                <button class="btn btn-primary" id="addTermBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14m-7-7h14"/>
+                    </svg>
+                    Add Term
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="layout">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <div style="display: flex; flex-direction: column; height: 100%;">
+                    <div style="flex: 1; overflow-y: auto;">
+                        <div class="sidebar-section">
+                            <h3 class="sidebar-title">Categories</h3>
+                            <div class="category-list" id="categoryList"></div>
+                        </div>
+                        
+                        <div class="sidebar-section">
+                            <h3 class="sidebar-title">Quick Filters</h3>
+                            <div class="filter-list" id="filterList">
+                                <div class="filter-item active" data-filter="all">
+                                    <div class="filter-dot" style="background: var(--accent-primary);"></div>
+                                    <span>All Terms</span>
+                                    <span class="filter-count" id="totalCount">0</span>
+                                </div>
+                                <div class="filter-item" data-filter="core">
+                                    <div class="filter-dot" style="background: var(--accent-warning);"></div>
+                                    <span>Core Concepts</span>
+                                </div>
+                                <div class="filter-item" data-filter="technique">
+                                    <div class="filter-dot" style="background: var(--accent-secondary);"></div>
+                                    <span>Techniques</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="sidebar-section">
+                            <h3 class="sidebar-title">Statistics</h3>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-value" id="statCategories">0</div>
+                                    <div class="stat-label">Categories</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="statTerms">0</div>
+                                    <div class="stat-label">Terms</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="statConnections">0</div>
+                                    <div class="stat-label">Connections</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar Footer with Creator Info & Dark Mode -->
+                    <div class="sidebar-footer">
+                        <div class="creator-card">
+                            <div class="creator-avatar">AS</div>
+                            <div class="creator-info">
+                                <h4>Abhishek Shah</h4>
+                                <p>Creator & Developer</p>
+                            </div>
+                        </div>
+                        
+                        <div class="creator-links">
+                            <a href="mailto:abhishek.aimarine@gmail.com" class="creator-link" title="Email">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                    <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                                Email
+                            </a>
+                            <a href="https://abhiverse01.github.io" target="_blank" class="creator-link" title="Portfolio">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                    <polyline points="15 3 21 3 21 9"/>
+                                    <line x1="10" y1="14" x2="21" y2="3"/>
+                                </svg>
+                                Portfolio
+                            </a>
+                        </div>
+
+                        <!-- Dark Mode Toggle -->
+                        <button id="themeToggle">🌙 Dark Mode</button>
+                        
+                        <div class="copyright-text" style="margin-top: 12px;">
+                            &copy; 2025 Abhishek Shah. All rights reserved.
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Content -->
+            <main class="content" id="content">
+                <!-- Graph View -->
+                <div class="graph-container" id="graphContainer">
+                    <canvas id="graphCanvas"></canvas>
+                    
+                    <!-- Legend -->
+                    <div class="legend" id="legend">
+                        <div class="legend-title">Node Types</div>
+                        <div class="legend-items" id="legendItems"></div>
+                    </div>
+                    
+                    <!-- Controls -->
+                    <div class="graph-controls">
+                        <button class="control-btn" id="zoomIn" aria-label="Zoom in">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35M11 8v6m-3-3h6"/>
+                            </svg>
+                        </button>
+                        <button class="control-btn" id="zoomOut" aria-label="Zoom out">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35M8 11h6"/>
+                            </svg>
+                        </button>
+                        <button class="control-btn" id="resetView" aria-label="Reset view">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </main>
         </div>
+
+        <!-- Node Detail Panel -->
+        <div class="panel" id="detailPanel">
+            <div class="panel-header">
+                <button class="panel-close" id="closePanel" aria-label="Close">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6 6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+                <div class="panel-badge" id="panelBadge">Category</div>
+                <h2 class="panel-title" id="panelTitle">Term Name</h2>
+                <p class="panel-subtitle" id="panelSubtitle">Description</p>
+            </div>
+            <div class="panel-body">
+                <section class="panel-section">
+                    <h4 class="section-title">Definition</h4>
+                    <p class="section-text" id="panelDefinition">Definition text...</p>
+                </section>
+                
+                <section class="panel-section">
+                    <h4 class="section-title">Related Terms</h4>
+                    <div class="related-grid" id="relatedTerms"></div>
+                </section>
+                
+                <section class="panel-section">
+                    <h4 class="section-title">Code Example</h4>
+                    <div class="code-block">
+                        <pre><code id="panelCode">// Code example</code></pre>
+                    </div>
+                </section>
+                
+                <section class="panel-section">
+                    <h4 class="section-title">Tags</h4>
+                    <div class="tag-list" id="panelTags"></div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Add Term Modal -->
+        <div class="modal-overlay" id="addModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add New Term</h3>
+                    <button class="modal-close" id="closeModal" aria-label="Close">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <form class="modal-form" id="addTermForm">
+                    <div class="form-group">
+                        <label class="form-label">Term Name *</label>
+                        <input type="text" name="name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category *</label>
+                        <select name="category" class="form-select" id="categorySelect" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Short Description *</label>
+                        <input type="text" name="shortDesc" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Full Definition *</label>
+                        <textarea name="definition" class="form-textarea" rows="4" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Related Terms</label>
+                            <input type="text" name="related" class="form-input" placeholder="term1, term2">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tags</label>
+                            <input type="text" name="tags" class="form-input" placeholder="tag1, tag2">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-ghost" id="cancelAdd">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Term</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tooltip -->
+        <div class="tooltip" id="tooltip"></div>
     </div>
 
     <!-- SCRIPT LOADER -->
@@ -110,33 +374,55 @@
         // Show desktop note for mobile users
         if (window.innerWidth < 768) document.getElementById('desktopNote').style.display = 'block';
 
-        // Loader emoji rotation
+        // Loader emoji rotation (New Feature)
         const emojis = ["🧠","🤖","💡","⚡"];
         let i = 0;
-        setInterval(() => {
-            document.getElementById('loaderText').textContent = `Initializing Knowledge Base... ${emojis[i]}`;
-            i = (i + 1) % emojis.length;
+        const emojiInterval = setInterval(() => {
+            const textEl = document.getElementById('loaderText');
+            if(textEl) {
+                textEl.textContent = `Initializing Knowledge Base... ${emojis[i]}`;
+                i = (i + 1) % emojis.length;
+            }
         }, 800);
 
-        // Dark mode toggle
+        // Dark mode toggle (New Feature)
         const root = document.documentElement;
-        document.getElementById('themeToggle').onclick = () => {
-            if(root.style.getPropertyValue('--bg-primary') === '#f8fafc'){
-                root.style.setProperty('--bg-primary','#0f172a');
-                root.style.setProperty('--bg-secondary','#1e293b');
-                root.style.setProperty('--text-primary','#f8fafc');
-            } else {
-                root.style.setProperty('--bg-primary','#f8fafc');
-                root.style.setProperty('--bg-secondary','#ffffff');
-                root.style.setProperty('--text-primary','#0f172a');
+        // Ensure button exists before attaching listener
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggleBtn = document.getElementById('themeToggle');
+            if(toggleBtn) {
+                toggleBtn.onclick = () => {
+                    const currentBg = root.style.getPropertyValue('--bg-primary');
+                    if(currentBg === '#f8fafc' || currentBg === ''){ // Default to light if empty
+                        root.style.setProperty('--bg-primary','#0f172a');
+                        root.style.setProperty('--bg-secondary','#1e293b');
+                        root.style.setProperty('--text-primary','#f8fafc');
+                        toggleBtn.textContent = '☀️ Light Mode';
+                    } else {
+                        root.style.setProperty('--bg-primary','#f8fafc');
+                        root.style.setProperty('--bg-secondary','#ffffff');
+                        root.style.setProperty('--text-primary','#0f172a');
+                        toggleBtn.textContent = '🌙 Dark Mode';
+                    }
+                };
             }
-        };
+        });
 
-        // Load JS scripts sequentially
+        // Load JS scripts sequentially (Robust Loader)
         function loadScript(src, callback){
             const s = document.createElement('script'); s.src=src;
-            s.onload=()=>{console.log(`✅ Loaded ${src}`); callback(false);}
-            s.onerror=()=>{console.error(`❌ Could not load ${src}`); alert(`Error loading ${src}`); callback(true);}
+            s.onload=()=>{
+                console.log(`✅ Loaded ${src}`);
+                // Basic integrity check
+                if(src.includes('data') && !window.KnowledgeBase) console.error(`❌ Integrity check failed for ${src}`);
+                if(src.includes('graph') && !window.KnowledgeGraph) console.error(`❌ Integrity check failed for ${src}`);
+                callback(false);
+            };
+            s.onerror=()=>{
+                console.error(`❌ Could not load ${src}`); 
+                alert(`Error loading ${src}`); 
+                callback(true);
+            };
             document.body.appendChild(s);
         }
 
@@ -147,7 +433,8 @@
                         const loader = document.getElementById('initial-loader');
                         if(window.app && window.app.initialized){ 
                             console.log("🚀 App is running."); 
-                            if(loader) loader.classList.add('hidden'); 
+                            if(loader) loader.classList.add('hidden');
+                            clearInterval(emojiInterval); // Stop emoji rotation
                         } else { console.error("❌ App failed to initialize."); }
                     }, 500);
                 });
