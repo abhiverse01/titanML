@@ -449,7 +449,99 @@
                 if(search) search.focus();
             }
         });
-    </script>
 
+
+        
+        /* =======================
+           Konami Code Easter Egg (Modernised)
+           ======================= */
+        
+        // Use e.key strings (Modern Standard)
+        const konamiSequence = [
+            'ArrowUp', 'ArrowUp', 
+            'ArrowDown', 'ArrowDown', 
+            'ArrowLeft', 'ArrowRight', 
+            'ArrowLeft', 'ArrowRight', 
+            'b', 'a'
+        ];
+        
+        let konamiIndex = 0;
+    
+        document.addEventListener('keydown', (e) => {
+            // Check if the key matches the current step in the sequence
+            if (e.key === konamiSequence[konamiIndex]) {
+                konamiIndex++;
+                
+                // If sequence completed
+                if (konamiIndex === konamiSequence.length) {
+                    konamiIndex = 0;
+                    triggerEasterEgg();
+                }
+                
+                // Prevent scrolling if user is typing the Konami code
+                if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    e.preventDefault();
+                }
+            } else {
+                konamiIndex = 0; // Reset if wrong key
+            }
+        });
+    
+        function triggerEasterEgg() {
+            console.log("%c🎉 Konami Code Activated! Disco Mode Engaged!", "color:#ff00ff; font-weight:bold; font-size:16px; text-shadow: 2px 2px #000;");
+    
+            // 1. Safety Check: Is the app actually running?
+            if (!window.app || !window.app.initialized) {
+                console.warn("App not ready yet.");
+                // Optional: Show a toast notification here
+                return;
+            }
+    
+            const graph = window.KnowledgeGraph;
+            if (!graph || !graph.nodes) return;
+    
+            // 2. Backup original colors/sizes so we can restore them later
+            const originalStyles = graph.nodes.map(node => ({
+                color: node.color,
+                scale: node.render ? node.render.scale : 1
+            }));
+    
+            let startTime = null;
+            const duration = 5000; // 5 seconds of chaos
+    
+            // 3. Use requestAnimationFrame for smooth performance
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = timestamp - startTime;
+    
+                if (progress < duration) {
+                    // Calculate a sine wave for pulsing effect
+                    const pulse = 1 + Math.sin(progress / 100) * 0.5; // Scale between 0.5 and 1.5
+    
+                    graph.nodes.forEach((node, i) => {
+                        if (node.render) {
+                            node.render.scale = pulse;
+                        }
+                        // Fun addition: Cycle colors (Rainbow effect)
+                        // We use HSL to rotate the hue over time
+                        const hue = (progress / 10 + (i * 10)) % 360; 
+                        node.color = `hsl(${hue}, 70%, 60%)`;
+                    });
+    
+                    requestAnimationFrame(animate);
+                } else {
+                    // 4. Restore state
+                    graph.nodes.forEach((node, i) => {
+                        node.color = originalStyles[i].color;
+                        if (node.render) node.render.scale = originalStyles[i].scale;
+                    });
+                    console.log("%c✨ Disco Mode Over. Returning to normal.", "color:#00b894; font-weight:bold;");
+                }
+            }
+    
+            requestAnimationFrame(animate);
+        }
+    </script>
+    
 </body>
 </html>
