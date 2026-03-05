@@ -76,6 +76,9 @@ class App {
             
         } catch (error) {
             console.error("CRITICAL ERROR IN SETUP:", error);
+        
+        // Visitor counter
+        updateVisitorCount();
         }
     }
 
