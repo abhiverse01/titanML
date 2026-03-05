@@ -38,11 +38,12 @@
 }
 
 /* 3. VISUALIZER HEADER (Full Width) */
+/* 3. VISUALIZER HEADER (Fixed Layout) */
 .viz-header {
-    width: 100%;
-    max-width: 1200px; /* Match content width */
     display: flex;
     align-items: center;
+    width: 100%; /* Ensure header spans full width */
+    max-width: 1200px; /* Match your content max-width */
     margin-bottom: 40px;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--border-light);
@@ -54,21 +55,25 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* GOD MODE BACK BUTTON */
 .viz-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px; /* Space between arrow and text */
     background: var(--bg-secondary);
-    border: 1px solid var(--border-medium);
-    color: var(--text-primary);
-    padding: 8px 20px;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9rem;
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    padding: 8px 18px;
+    border-radius: 20px; /* Pill shape (fully rounded) */
+    font-size: 0.8rem;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-right: 20px;
-    transition: all 0.2s;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: var(--shadow-sm);
-    white-space: nowrap;
+    white-space: nowrap; /* Prevents button breaking in half */
+    margin-right: 24px; /* Spacing between button and Title */
 }
 
 .viz-back-btn:hover {
@@ -76,8 +81,15 @@
     color: white;
     border-color: var(--accent-primary);
     box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
-    transform: translateX(-2px);
+    transform: translateX(-2px); /* Subtle slide left on hover */
 }
+
+.viz-back-btn:active {
+    transform: translateX(0);
+    box-shadow: 0 2px 4px rgba(8, 145, 178, 0.2);
+}
+
+
 
 /* 4. GALLERY GRID (Full Width Layout) */
 .arch-gallery {
