@@ -9,7 +9,7 @@ class ArchitectureManager {
         
         // Bind methods to keep 'this' context
         this.handleGalleryClick = this.handleGalleryClick.bind(this);
-        this.handleBackClick = this.handleBackClick.bind(this);
+        this.handleViewClick = this.handleViewClick.bind(this);
         this.handlePopState = this.handlePopState.bind(this);
         
         this.init();
@@ -23,10 +23,12 @@ class ArchitectureManager {
             this.data = await response.json();
             this.isLoaded = true;
             this.renderGallery();
-            this.setupEventListeners(); // Setup clicks here
+            this.setupEventListeners();
             console.log('Architecture Manager Loaded:', this.data.length, 'architectures');
         } catch (error) {
             console.error('Architecture Manager Error:', error);
+            // Fallback if JSON fails (for testing)
+            console.warn("Ensure data/architecture.json exists and is valid JSON.");
         }
     }
 
@@ -36,14 +38,9 @@ class ArchitectureManager {
             this.galleryContainer.addEventListener('click', this.handleGalleryClick);
         }
 
-        // 2. Listen for clicks on the Header (for the Back button)
-        const header = document.querySelector('.viz-header');
-        if (header) {
-            header.addEventListener('click', (e) => {
-                if (e.target.closest('.viz-back-btn')) {
-                    this.handleBackClick();
-                }
-            });
+        // 2. Listen for clicks ANYWHERE in the Architecture View (Catches Back Button)
+        if (this.container) {
+            this.container.addEventListener('click', this.handleViewClick);
         }
 
         // 3. Listen for Browser Back Button
@@ -53,28 +50,30 @@ class ArchitectureManager {
     // --- CLICK HANDLERS ---
 
     handleGalleryClick(e) {
-        // Find the closest card that was clicked
         const card = e.target.closest('.arch-card');
         if (!card) return;
-
-        // Get ID from the data attribute
         const archId = card.dataset.id;
         if (archId) {
             this.showVisual(archId);
         }
     }
 
+    // Handles Back button clicks anywhere inside #archView
+    handleViewClick(e) {
+        if (e.target.closest('.viz-back-btn')) {
+            this.handleBackClick();
+        }
+    }
+
     handleBackClick() {
-        // If we are inside the architecture system, use browser back
         if (this.currentView === 'architecture') {
             window.history.back();
         }
     }
 
     handlePopState(event) {
-        // If the user pressed Back in the browser and we were viewing architecture
         if (this.currentView === 'architecture') {
-            this.hideVisual(false); // false = don't push state again
+            this.hideVisual(false);
         }
     }
 
@@ -83,7 +82,6 @@ class ArchitectureManager {
     renderGallery() {
         if (!this.galleryContainer) return;
         
-        // Use data-id instead of onclick for better event handling
         this.galleryContainer.innerHTML = this.data.map(arch => `
             <div class="arch-card" data-id="${arch.id}">
                 <div class="arch-category">${arch.category}</div>
@@ -110,16 +108,19 @@ class ArchitectureManager {
         this.container.style.display = 'flex';
         this.currentView = 'architecture';
 
-        // 3. Update Browser History (only if entering the view for the first time in this sequence)
-        // We check if the current hash is NOT #arch
+        // 3. Update Browser History
         if (window.location.hash !== '#arch') {
             history.pushState({ mode: 'architecture' }, '', '#arch');
         }
 
+        // 4. Render Content
+        // We use 'this.container' (Parent) to find the Header, because Header is a sibling of Visualizer
+        const header = this.container.querySelector('.viz-header');
+        const flowContainer = this.visualizerContainer.querySelector('.flow-container');
+
         if (!archId) {
             // --- SHOW GALLERY ---
-            const header = this.visualizerContainer.querySelector('.viz-header');
-            if(header) {
+            if (header) {
                 header.innerHTML = `
                     <button class="viz-back-btn">← Back to Graph</button>
                     <div>
@@ -133,10 +134,12 @@ class ArchitectureManager {
         } else {
             // --- SHOW SPECIFIC ARCHITECTURE ---
             const arch = this.data.find(a => a.id === archId);
-            if (!arch) return;
+            if (!arch) {
+                console.error("Architecture not found:", archId);
+                return;
+            }
 
-            const header = this.visualizerContainer.querySelector('.viz-header');
-            if(header) {
+            if (header) {
                 header.innerHTML = `
                     <button class="viz-back-btn">← Back to Gallery</button>
                     <div>
@@ -146,9 +149,10 @@ class ArchitectureManager {
                 `;
             }
 
-            const flowContainer = this.visualizerContainer.querySelector('.flow-container');
-            if(flowContainer) {
+            if (flowContainer) {
                 flowContainer.innerHTML = this.renderSteps(arch.steps);
+            } else {
+                console.error("Flow container not found!");
             }
             
             this.galleryContainer.style.display = 'none';
@@ -157,13 +161,11 @@ class ArchitectureManager {
     }
 
     hideVisual(manageHistory = true) {
-        // If we are managing history (internal button click), go back
         if (manageHistory && window.location.hash === '#arch') {
             window.history.back();
             return;
         }
 
-        // Otherwise, just update the UI (this happens when browser back is pressed)
         this.container.style.display = 'none';
         this.container.classList.remove('active');
         
