@@ -734,3 +734,42 @@ class App {
 
 //Initialise and expose to the window
 window.app = new App();
+
+
+
+async function updateVisitorCount(){
+
+const el = document.getElementById("visitorCount");
+if(!el) return;
+
+const namespace = "titanml-ai-nexus";
+const key = "visits";
+
+try{
+
+if(!localStorage.getItem("titanml_visited")){
+
+const res = await fetch(`https://api.countapi.xyz/hit/${namespace}/${key}`);
+const data = await res.json();
+
+localStorage.setItem("titanml_visited","true");
+
+el.textContent = data.value.toLocaleString();
+
+}else{
+
+const res = await fetch(`https://api.countapi.xyz/get/${namespace}/${key}`);
+const data = await res.json();
+
+el.textContent = data.value.toLocaleString();
+
+}
+
+}catch(err){
+console.error("Visitor counter error",err);
+el.textContent = "—";
+}
+
+}
+
+document.addEventListener("DOMContentLoaded", updateVisitorCount);
