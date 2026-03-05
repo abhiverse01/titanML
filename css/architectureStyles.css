@@ -1,8 +1,8 @@
 /* ==========================================
-   ARCHITECTURE VISUALIZER (GOD MODE REMASTERED)
+   ARCHITECTURE VISUALIZER (GOD MODE FINAL)
    ========================================== */
 
-/* 1. MAIN CONTAINER */
+/* 1. MAIN CONTAINER & CUSTOM SCROLLBAR */
 #archView {
     position: fixed;
     inset: 0;
@@ -11,14 +11,26 @@
     z-index: 60; 
     background: var(--bg-primary);
     overflow-y: auto;
+    overflow-x: hidden;
     display: none;
     
-    /* Clean Tech Grid */
+    /* Tech Grid */
     background-image: 
         linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
     background-size: 32px 32px;
 }
+
+/* GOD MODE: Custom Scrollbar (Thin & Styled) */
+#archView::-webkit-scrollbar { width: 8px; }
+#archView::-webkit-scrollbar-track { background: transparent; }
+#archView::-webkit-scrollbar-thumb { 
+    background: var(--border-medium); 
+    border-radius: 4px; 
+    border: 2px solid transparent; /* Creates a track effect */
+    background-clip: content-box; 
+}
+#archView::-webkit-scrollbar-thumb:hover { background: var(--border-dark); }
 
 /* 2. WRAPPER */
 .arch-visualizer, .arch-gallery {
@@ -27,7 +39,7 @@
     padding-top: calc(var(--header-height) + 20px);
     padding-left: 20px;
     padding-right: 20px;
-    padding-bottom: 60px;
+    padding-bottom: 80px; /* More breathing room */
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -37,11 +49,11 @@
 /* 3. VISUALIZER HEADER (Button on Right) */
 .viz-header {
     display: flex;
-    justify-content: space-between; /* Pushes Button to Right, Title to Left */
+    justify-content: space-between;
     align-items: center;
     width: 100%;
     max-width: 1200px;
-    margin-bottom: 40px;
+    margin-bottom: 50px;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--border-light);
     animation: slideDown 0.4s ease-out;
@@ -52,18 +64,14 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* HEADER TEXT CONTAINER */
-.viz-title-group {
-    display: flex;
-    flex-direction: column;
-}
+.viz-title-group { display: flex; flex-direction: column; }
 
-/* BACK BUTTON (Right Side) */
+/* BACK BUTTON */
 .viz-back-btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: transparent; /* Ghost style */
+    background: transparent;
     border: 1px solid var(--border-medium);
     color: var(--text-secondary);
     padding: 8px 20px;
@@ -76,7 +84,7 @@
     transition: all 0.2s ease;
     box-shadow: var(--shadow-sm);
     white-space: nowrap;
-    margin-left: 20px; /* Space from title */
+    margin-left: 20px;
 }
 
 .viz-back-btn:hover {
@@ -84,36 +92,36 @@
     color: white;
     border-color: var(--accent-primary);
     box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
-    transform: translateX(2px); /* Slight nudge right on hover */
+    transform: translateX(2px);
 }
 
-/* 4. GALLERY GRID (Typography & Layout Remastered) */
+/* 4. GALLERY GRID */
 .arch-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 24px;
     width: 100%;
     max-width: 1200px;
-    align-items: stretch; /* CRITICAL FIX: Forces equal height cards */
+    align-items: stretch;
 }
 
 .arch-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
     padding: 24px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy */
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow-sm);
-    min-height: 200px; /* Slightly taller to accommodate styling */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.05); /* Subtle Depth */
+    min-height: 200px;
     display: flex;
     flex-direction: column;
-    align-self: stretch; /* Stretches to fill grid row */
+    align-self: stretch;
 }
 
-/* Tech Corner Decoration (God Mode Detail) */
+/* Tech Corner Decoration */
 .arch-card::after {
     content: '';
     position: absolute;
@@ -121,16 +129,16 @@
     width: 24px; height: 24px;
     border-top: 3px solid var(--accent-primary);
     border-right: 3px solid var(--accent-primary);
-    border-top-right-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-xl);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
 
 .arch-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-6px);
     border-color: var(--accent-primary);
-    box-shadow: var(--shadow-lg);
-    background: var(--bg-secondary);
+    box-shadow: 0 10px 30px rgba(8, 145, 178, 0.15); /* Stronger shadow */
+    background: #fff;
 }
 
 .arch-card:hover::after { opacity: 1; }
@@ -148,27 +156,24 @@
 
 .arch-card:hover::before { transform: scaleX(1); }
 
-/* --- REMASTERED CARD TYPOGRAPHY --- */
-
-/* 4.1 Category (Badge Style) */
+/* Typography */
 .arch-category {
-    display: inline-block; /* Wraps content tightly */
+    display: inline-block;
     font-size: var(--font-size-xs);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--accent-primary);
-    background: rgba(8, 145, 178, 0.1); /* Subtle tint background */
-    padding: 4px 10px;
+    background: rgba(8, 145, 178, 0.1);
+    padding: 5px 12px;
     border-radius: 6px;
     margin-bottom: 12px;
-    align-self: flex-start; /* Align left */
+    align-self: flex-start;
     border: 1px solid rgba(8, 145, 178, 0.2);
 }
 
-/* 4.2. Title */
 .arch-title {
-    font-size: 1.25rem; /* Larger than variable for impact */
+    font-size: 1.25rem;
     font-weight: 800;
     color: var(--text-primary);
     margin-bottom: 8px;
@@ -176,35 +181,30 @@
     letter-spacing: -0.02em;
 }
 
-/* 4.3. Description (Clamped & Readable) */
 .arch-desc {
     font-size: var(--font-size-sm);
-    color: var(--text-secondary); /* Darker than tertiary for readability */
+    color: var(--text-secondary);
     line-height: 1.6;
-    margin-top: auto; /* Pushes description to bottom of card if height varies */
-    
-    /* God Mode: Text Clamping (Truncates long text with ...) */
+    margin-top: auto;
     display: -webkit-box;
-    -webkit-line-clamp: 3; /* Show max 3 lines */
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-
-/* 5. FLOWCHART ENGINE (Visual Upgrade) */
 /* 5. FLOWCHART ENGINE (GOD MODE: NEURAL SPINE) */
 .flow-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
-    max-width: 900px; /* Wider for professional look */
+    max-width: 900px;
     position: relative;
-    padding: 20px 0; /* Top/Bottom padding */
+    padding: 20px 0;
 }
 
-/* THE CENTRAL SPINE (The Line running down the middle) */
+/* THE CENTRAL SPINE */
 .flow-container::before {
     content: '';
     position: absolute;
@@ -216,15 +216,16 @@
     background: linear-gradient(to bottom, var(--border-medium) 0%, var(--accent-primary) 50%, var(--border-medium) 100%);
     background-size: 100% 200%;
     z-index: 1;
-    /* GOD MODE: Pulse Animation */
+    /* FIX: Add shadow so spine glows */
+    box-shadow: 0 0 8px rgba(8, 145, 178, 0.2);
     animation: flowPulse 3s linear infinite;
-    opacity: 0.3;
+    opacity: 0.4;
 }
 
 @keyframes flowPulse {
-    0% { background-position: 0% -50%; opacity: 0.3; }
-    50% { opacity: 0.8; }
-    100% { background-position: 0% 150%; opacity: 0.3; }
+    0% { background-position: 0% -50%; opacity: 0.4; }
+    50% { opacity: 1; }
+    100% { background-position: 0% 150%; opacity: 0.4; }
 }
 
 .flow-step {
@@ -233,7 +234,7 @@
     position: relative;
     animation: fadeInUp 0.6s ease-out forwards;
     opacity: 0;
-    z-index: 2; /* Above the spine */
+    z-index: 10; /* Higher than spine */
 }
 
 /* Stagger */
@@ -248,19 +249,19 @@
     to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
-/* --- THE NODE (Glass & Tech Aesthetic) --- */
+/* THE NODE */
 .step-box {
-    background: rgba(255, 255, 255, 0.85); /* High opacity for readability */
-    backdrop-filter: blur(12px); /* God Mode: Glass effect */
+    background: rgba(255, 255, 255, 0.9); /* Higher opacity to hide spine clearly */
+    backdrop-filter: blur(12px);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-lg);
-    padding: 24px 32px; /* More padding for "Airy" feel */
+    padding: 24px 32px;
     position: relative;
-    z-index: 3;
+    z-index: 10;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     min-height: 80px;
-    width: 90%; /* Don't touch the spine edges */
+    width: 90%; /* Centered on spine */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -269,18 +270,19 @@
 
 /* Hover: Neon Activation */
 .step-box:hover {
-    background: #fff; /* Solid white on hover */
+    background: #fff;
     transform: scale(1.02);
-    /* GOD MODE: Neon Glow */
-    box-shadow: 0 0 0 1px var(--accent-primary), 0 10px 30px rgba(8, 145, 178, 0.25);
+    /* Stronger Glow */
+    box-shadow: 0 0 0 2px var(--accent-primary), 0 15px 40px rgba(8, 145, 178, 0.3);
     border-color: var(--accent-primary);
+    z-index: 20; /* Bring to very front */
 }
 
-/* Status Light (Small Dot) */
+/* Status Light */
 .step-box::before {
     content: '';
     position: absolute;
-    top: -5px;
+    top: -6px;
     left: 50%;
     transform: translateX(-50%);
     width: 10px;
@@ -288,30 +290,28 @@
     background: var(--border-medium);
     border-radius: 50%;
     border: 2px solid var(--bg-primary);
-    transition: background 0.3s;
+    transition: background 0.3s, box-shadow 0.3s;
+    z-index: 20;
 }
 
 .step-box:hover::before {
     background: var(--accent-success);
-    box-shadow: 0 0 10px var(--accent-success);
+    box-shadow: 0 0 12px var(--accent-success);
 }
 
-/* --- CONNECTORS (Schematics) --- */
-
-/* 1. Vertical Arrow (Spine Connection) */
+/* CONNECTORS */
 .flow-step:not(:last-child)::after {
     content: '';
     position: absolute;
-    bottom: -40px; /* Arrow points to next box */
+    bottom: -40px;
     left: 50%;
     transform: translateX(-50%);
     width: 2px;
     height: 30px;
     background: var(--border-medium);
-    z-index: 1;
+    z-index: 5;
 }
 
-/* 2. Arrow Head */
 .flow-step:not(:last-child)::before {
     content: '';
     position: absolute;
@@ -321,46 +321,45 @@
     border-left: 6px solid transparent;
     border-right: 6px solid transparent;
     border-top: 8px solid var(--border-medium);
-    z-index: 2;
+    z-index: 5;
 }
 
-/* 3. Branching Line (For Nested Children) */
-/* We will draw this dynamically in the logic, but CSS handles the look */
+/* BRANCHING (Nested Children) */
+/* Draw line from Child Left back to Parent */
 .step-children::before {
-    /* Horizontal line coming out of the parent box */
     content: '';
     position: absolute;
     top: 50%;
-    right: 100%; /* Starts from right edge of container */
-    width: 20px;
+    left: -41px; /* Indent (40px) + Border (1px) */
+    width: 41px;
     height: 2px;
     background: var(--border-light);
     transform: translateY(-50%);
+    z-index: 5;
 }
+
+/* Corner piece for the branch */
 .step-children::after {
-    /* Corner piece for the branch */
     content: '';
     position: absolute;
     top: 50%;
-    right: 100%;
+    left: -41px;
     width: 8px;
     height: 8px;
     border-top: 2px solid var(--border-light);
-    border-right: 2px solid var(--border-light);
-    transform: translateY(-50%) rotate(45deg);
+    border-left: 2px solid var(--border-light);
+    transform: translateY(-50%) rotate(-45deg);
+    z-index: 5;
 }
 
-/* --- STEP TYPES (Professional Shapes) --- */
-
-/* START: Pill Shape */
+/* STEP TYPES */
 .step-type-start .step-box {
-    border-radius: 50px; /* Fully rounded */
+    border-radius: 50px;
     background: linear-gradient(135deg, var(--bg-secondary), rgba(16, 185, 129, 0.08));
     border: 2px solid var(--accent-success);
     padding: 20px 40px;
 }
 
-/* END: Pill Shape */
 .step-type-end .step-box {
     border-radius: 50px;
     background: linear-gradient(135deg, var(--bg-secondary), rgba(239, 68, 68, 0.08));
@@ -368,21 +367,17 @@
     padding: 20px 40px;
 }
 
-/* HIGHLIGHT: Tech Box */
 .step-type-highlight .step-box {
     border: 1px solid var(--accent-primary);
     background: linear-gradient(135deg, var(--bg-secondary), rgba(8, 145, 178, 0.05));
 }
 
-/* CONTAINER: Dashed Group Box */
 .step-type-container .step-box {
-    background: var(--bg-tertiary); /* Distinct grey */
+    background: var(--bg-tertiary);
     border: 1px dashed var(--border-medium);
-    border-style: dashed;
 }
 
-/* --- TYPOGRAPHY --- */
-
+/* TYPOGRAPHY */
 .step-label {
     font-size: var(--font-size-md);
     font-weight: 800;
@@ -391,7 +386,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     position: relative;
-    z-index: 4;
+    z-index: 20;
 }
 
 .step-desc {
@@ -402,37 +397,36 @@
     padding-top: 12px;
     border-top: 1px solid var(--border-light);
     position: relative;
-    z-index: 4;
+    z-index: 20;
 }
 
-/* --- 6. NESTED CHILDREN (The Branch) --- */
+/* 6. NESTED CHILDREN */
 .step-children {
     display: flex;
     flex-direction: column;
     gap: 20px;
     margin-top: 20px;
-    margin-left: 40px; /* Indent to right */
-    margin-right: 40px;
+    margin-left: 40px; /* The Indent */
+    margin-right: 20px;
     padding: 20px;
-    background: var(--bg-primary); /* Contrast against the line */
+    background: var(--bg-primary);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-light);
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
     position: relative;
 }
 
-/* 7. MOBILE ADJUSTMENTS */
+/* 7. MOBILE RESPONSIVE */
 @media (max-width: 768px) {
+    #archView { z-index: 200; }
+    
     .flow-container { padding: 10px 0; }
     
-    /* On mobile, remove the margin to utilize full width */
     .step-children {
-        margin-left: 0;
-        margin-right: 0;
+        margin-left: 0; /* Centered on mobile */
         padding: 16px;
     }
-    
-    /* Remove horizontal branch line indicators on mobile for cleaner look */
+    /* Hide branch lines on mobile for cleaner view */
     .step-children::before, .step-children::after {
         display: none;
     }
@@ -440,7 +434,6 @@
 
 /* 8. DARK MODE */
 @media (prefers-color-scheme: dark) {
-
     #archView {
         background-image: 
             linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
@@ -448,7 +441,7 @@
     }
 
     .flow-container::before {
-        opacity: 0.5;
+        opacity: 0.6; /* Brighter in dark mode */
         background: linear-gradient(
             to bottom,
             var(--border-dark) 0%,
@@ -458,18 +451,17 @@
     }
 
     .step-box {
-        background: var(--bg-secondary);
+        background: rgba(30, 41, 59, 0.95); /* Darker glass */
         border-color: var(--border-medium);
         backdrop-filter: blur(8px);
     }
-
+    
     .step-type-container .step-box {
-        background: var(--bg-tertiary);
+        background: rgba(30, 41, 59, 0.6);
     }
 
     .step-children {
-        background: var(--bg-tertiary);
+        background: rgba(15, 23, 42, 0.6);
         border-color: var(--border-medium);
     }
-
 }
