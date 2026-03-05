@@ -178,7 +178,26 @@ class App {
             });
         }
 
-    // ... sidebar toggle logic fixed above ...
+        // ... sidebar toggle logic fixed above ...
+
+        // ==========================================
+        // ARCHITECTURE NAVIGATION LOGIC
+        // ==========================================
+        
+        const archBtn = document.getElementById('navArchitecture');
+        if (archBtn) {
+            archBtn.addEventListener('click', () => {
+                // 1. Initialise data if not loaded
+                if (window.archManager) {
+                    window.archManager.init();
+                    
+                    // 2. Switch View (Pass null to show the gallery list)
+                    window.archManager.showVisual(null);
+                } else {
+                    console.error("Architecture Manager not found. Is architecture.js loaded?");
+                }
+            });
+        }
         
         // Category list
         const categoryList = document.getElementById('categoryList');
