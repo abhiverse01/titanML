@@ -5,6 +5,14 @@ class ArchitectureManager {
         this.galleryContainer = document.getElementById('archGallery');
         this.visualizerContainer = document.getElementById('archVisualizer');
         this.isLoaded = false;
+        this.currentView = 'graph'; // 'graph' or 'architecture'
+        
+        // Bind methods to keep 'this' context
+        this.handleGalleryClick = this.handleGalleryClick.bind(this);
+        this.handleBackClick = this.handleBackClick.bind(this);
+        this.handlePopState = this.handlePopState.bind(this);
+        
+        this.init();
     }
 
     async init() {
@@ -15,18 +23,69 @@ class ArchitectureManager {
             this.data = await response.json();
             this.isLoaded = true;
             this.renderGallery();
+            this.setupEventListeners(); // Setup clicks here
             console.log('Architecture Manager Loaded:', this.data.length, 'architectures');
         } catch (error) {
             console.error('Architecture Manager Error:', error);
         }
     }
 
-    // 1. Render the Grid of Cards
+    setupEventListeners() {
+        // 1. Listen for clicks on the Gallery Grid
+        if (this.galleryContainer) {
+            this.galleryContainer.addEventListener('click', this.handleGalleryClick);
+        }
+
+        // 2. Listen for clicks on the Header (for the Back button)
+        const header = document.querySelector('.viz-header');
+        if (header) {
+            header.addEventListener('click', (e) => {
+                if (e.target.closest('.viz-back-btn')) {
+                    this.handleBackClick();
+                }
+            });
+        }
+
+        // 3. Listen for Browser Back Button
+        window.addEventListener('popstate', this.handlePopState);
+    }
+
+    // --- CLICK HANDLERS ---
+
+    handleGalleryClick(e) {
+        // Find the closest card that was clicked
+        const card = e.target.closest('.arch-card');
+        if (!card) return;
+
+        // Get ID from the data attribute
+        const archId = card.dataset.id;
+        if (archId) {
+            this.showVisual(archId);
+        }
+    }
+
+    handleBackClick() {
+        // If we are inside the architecture system, use browser back
+        if (this.currentView === 'architecture') {
+            window.history.back();
+        }
+    }
+
+    handlePopState(event) {
+        // If the user pressed Back in the browser and we were viewing architecture
+        if (this.currentView === 'architecture') {
+            this.hideVisual(false); // false = don't push state again
+        }
+    }
+
+    // --- RENDERING ---
+
     renderGallery() {
         if (!this.galleryContainer) return;
         
+        // Use data-id instead of onclick for better event handling
         this.galleryContainer.innerHTML = this.data.map(arch => `
-            <div class="arch-card" onclick="window.archManager.showVisual('${arch.id}')">
+            <div class="arch-card" data-id="${arch.id}">
                 <div class="arch-category">${arch.category}</div>
                 <div class="arch-title">${arch.name}</div>
                 <div class="arch-desc">${arch.shortDesc}</div>
@@ -34,8 +93,10 @@ class ArchitectureManager {
         `).join('');
     }
 
-    // 2. Switch to Visualizer View
+    // --- VIEW SWITCHING ---
+
     async showVisual(archId) {
+        // 1. Ensure data is loaded
         if (!this.isLoaded) {
             await this.init();
         }
@@ -43,68 +104,84 @@ class ArchitectureManager {
         const content = document.getElementById('content');
         const sidebar = document.querySelector('.sidebar');
         
-        // FORCEFULLY hide the sidebar and content using inline styles
+        // 2. Show Architecture Container
         if(content) content.style.display = 'none';
         if(sidebar) sidebar.style.display = 'none'; 
-        
         this.container.style.display = 'flex';
-        this.container.classList.add('active');
+        this.currentView = 'architecture';
+
+        // 3. Update Browser History (only if entering the view for the first time in this sequence)
+        // We check if the current hash is NOT #arch
+        if (window.location.hash !== '#arch') {
+            history.pushState({ mode: 'architecture' }, '', '#arch');
+        }
 
         if (!archId) {
-            // SHOW GALLERY
+            // --- SHOW GALLERY ---
             const header = this.visualizerContainer.querySelector('.viz-header');
-            header.innerHTML = `
-                <button class="viz-back-btn" onclick="window.archManager.hideVisual()">← Back to Graph</button>
-                <div>
-                    <h2 style="font-size: 1.5rem; color: var(--text-primary);">AI Architectures</h2>
-                    <p style="color: var(--text-tertiary);">Explore the blueprints of modern AI.</p>
-                </div>
-            `;
+            if(header) {
+                header.innerHTML = `
+                    <button class="viz-back-btn">← Back to Graph</button>
+                    <div>
+                        <h2 style="font-size: 1.5rem; color: var(--text-primary);">AI Architectures</h2>
+                        <p style="color: var(--text-tertiary);">Explore the blueprints of modern AI.</p>
+                    </div>
+                `;
+            }
             this.visualizerContainer.style.display = 'none';
             this.galleryContainer.style.display = 'grid';
         } else {
-            // SHOW SPECIFIC ARCHITECTURE
+            // --- SHOW SPECIFIC ARCHITECTURE ---
             const arch = this.data.find(a => a.id === archId);
             if (!arch) return;
 
             const header = this.visualizerContainer.querySelector('.viz-header');
-            header.innerHTML = `
-                <button class="viz-back-btn" onclick="window.archManager.showVisual(null)">← Back to Gallery</button>
-                <div>
-                    <h2 style="font-size: 1.5rem; color: var(--text-primary);">${arch.name}</h2>
-                    <p style="color: var(--text-tertiary);">${arch.shortDesc}</p>
-                </div>
-            `;
+            if(header) {
+                header.innerHTML = `
+                    <button class="viz-back-btn">← Back to Gallery</button>
+                    <div>
+                        <h2 style="font-size: 1.5rem; color: var(--text-primary);">${arch.name}</h2>
+                        <p style="color: var(--text-tertiary);">${arch.shortDesc}</p>
+                    </div>
+                `;
+            }
 
             const flowContainer = this.visualizerContainer.querySelector('.flow-container');
-            flowContainer.innerHTML = this.renderSteps(arch.steps);
+            if(flowContainer) {
+                flowContainer.innerHTML = this.renderSteps(arch.steps);
+            }
             
             this.galleryContainer.style.display = 'none';
             this.visualizerContainer.style.display = 'block';
         }
     }
 
+    hideVisual(manageHistory = true) {
+        // If we are managing history (internal button click), go back
+        if (manageHistory && window.location.hash === '#arch') {
+            window.history.back();
+            return;
+        }
 
-    // 3. Hide Visualizer (Return to Graph)
-
-    hideVisual() {
+        // Otherwise, just update the UI (this happens when browser back is pressed)
         this.container.style.display = 'none';
         this.container.classList.remove('active');
         
-        // Restore visibility
         const content = document.getElementById('content');
         const sidebar = document.querySelector('.sidebar');
         
-        if(content) content.style.display = 'flex'; // Restore graph
-        if(sidebar) sidebar.style.display = 'flex'; // Restore sidebar
+        if(content) content.style.display = 'flex';
+        if(sidebar) sidebar.style.display = 'flex';
+        
+        this.currentView = 'graph';
     }
 
-    // 4. Recursive Function to Render Steps (Handles Nesting)
+    // --- RECURSIVE RENDERER ---
     renderSteps(steps) {
+        if(!steps) return '';
         return steps.map((step, index) => {
             let typeClass = `step-type-${step.type || 'process'}`;
             
-            // If this step has children, we need a container
             let childrenHtml = '';
             if (step.children && step.children.length > 0) {
                 typeClass += ' step-type-container';
