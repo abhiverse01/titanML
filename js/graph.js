@@ -1,5 +1,6 @@
 /**
- * AI Knowledge Graph Visualization - CONNECTION OPTIMIZED
+ * AI Knowledge Graph Visualization - GOD MODE EDITION
+ * Features: Physics Engine, Adaptive Zoom/pan, Connection Optimization, Quantum Packets, Scanning Rings
  */
 
 class KnowledgeGraph {
@@ -165,7 +166,6 @@ class KnowledgeGraph {
         terms.forEach(term => {
             if (term.related && term.related.length > 0) {
                 term.related.forEach(relatedId => {
-                    // Check for duplicate
                     const exists = this.edges.some(e => 
                         (e.source === term.id && e.target === relatedId) ||
                         (e.source === relatedId && e.target === term.id)
@@ -181,6 +181,7 @@ class KnowledgeGraph {
             }
         });
         
+        // Initial physics warm-up
         for (let i = 0; i < 50; i++) {
             this.simulatePhysics(0.15);
         }
@@ -257,7 +258,7 @@ class KnowledgeGraph {
         });
     }
     
-    // Interaction Handlers
+    // --- Interaction Handlers ---
     screenToWorld(sx, sy) {
         return { x: (sx - this.panX) / this.zoom, y: (sy - this.panY) / this.zoom };
     }
@@ -412,8 +413,32 @@ class KnowledgeGraph {
     stopAnimation() {
         if (this.animationId) cancelAnimationFrame(this.animationId);
     }
+
+    // --- RENDERING HELPERS ---
+
+    // Helper: Calculate point on Quadratic Bezier Curve (t = 0 to 1)
+    getQuadraticBezierPoint(t, sx, sy, cx, cy, tx, ty) {
+        return {
+            x: (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * cx + t * t * tx,
+            y: (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * cy + t * t * ty
+        };
+    }
     
-    // --- RENDERING ---
+    darkenColor(hex, percent) {
+        const num = parseInt(hex.replace('#', ''), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = Math.max(0, (num >> 16) - amt);
+        const G = Math.max(0, (num >> 8 & 0x00FF) - amt);
+        const B = Math.max(0, (num & 0x0000FF) - amt);
+        return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+    }
+
+    hexToRgba(hex, alpha) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
 
     render() {
         const ctx = this.ctx;
@@ -433,7 +458,7 @@ class KnowledgeGraph {
         ctx.translate(this.panX, this.panY);
         ctx.scale(this.zoom, this.zoom);
         
-        this.drawEdges(ctx); // EDGES FIRST
+        this.drawEdges(ctx); 
         this.drawNodes(ctx);
         
         ctx.restore();
@@ -452,10 +477,7 @@ class KnowledgeGraph {
     }
 
     /**
-     * CONNECTION GOD MODE:
-     * 1. Gradient Lines (Source Color -> Target Color)
-     * 2. Directional Arrows
-     * 3. Flow Animation
+     * GOD MODE VISUALS: QUANTUM PACKETS & GRADIENTS
      */
     drawEdges(ctx) {
         const selected = this.selectedNode;
@@ -485,7 +507,7 @@ class KnowledgeGraph {
             const dy = target.y - source.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             
-            // Curvature Calculation
+            // --- 1. DRAW THE CURVED LINE ---
             const mx = (source.x + target.x) / 2;
             const my = (source.y + target.y) / 2;
             const offset = dist * 0.15; 
@@ -493,34 +515,27 @@ class KnowledgeGraph {
             const cx = mx + (dy / dist) * offset * direction;
             const cy = my - (dx / dist) * offset * direction;
             
-            // 1. DRAW THE LINE
             ctx.beginPath();
             ctx.moveTo(source.x, source.y);
             ctx.quadraticCurveTo(cx, cy, target.x, target.y);
             
-            // Create Gradient: Source Color -> Target Color
-            // Note: Gradient coordinates are in world space
+            // Gradient Line
             const grad = ctx.createLinearGradient(source.x, source.y, target.x, target.y);
             grad.addColorStop(0, this.hexToRgba(source.color, opacity));
             grad.addColorStop(1, this.hexToRgba(target.color, opacity));
             
             ctx.strokeStyle = grad;
-            ctx.lineWidth = (isSourceSelected || isHoveredRelated) ? 2.5 : 1.5;
+            ctx.lineWidth = (isSourceSelected || isHoveredRelated) ? 3 : 1.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
             ctx.stroke();
             
-            // 2. DRAW ARROW HEAD (For Direction)
-            // We need to find the tangent at the end of the curve.
-            // Using quadratic formula derivative approx is complex, 
-            // so we approximate the angle using the control point and end point.
-            
-            // Angle at end of quadratic bezier:
-            // B'(t) = 2(1-t)(P1-P0) + 2t(P2-P1). For t=1, it's 2(P2-P1).
+            // --- 2. DRAW ARROW HEAD ---
             const tangentX = target.x - cx;
             const tangentY = target.y - cy;
             const angle = Math.atan2(tangentY, tangentX);
             
-            // Position arrow slightly inside the node radius
-            const arrowPos = target.radius + 5;
+            const arrowPos = target.radius + 6;
             const arrowX = target.x - Math.cos(angle) * arrowPos;
             const arrowY = target.y - Math.sin(angle) * arrowPos;
             
@@ -530,32 +545,43 @@ class KnowledgeGraph {
             
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            ctx.lineTo(-8, 4); // Arrow size
+            ctx.lineTo(-8, 4); 
             ctx.lineTo(-8, -4);
             ctx.closePath();
             
-            ctx.fillStyle = this.hexToRgba(target.color, opacity); // Target color
+            ctx.fillStyle = this.hexToRgba(target.color, opacity); 
             ctx.fill();
             ctx.restore();
-            
-            // 3. FLOW ANIMATION (Only on selected/highlighted paths)
+
+            // --- 3. GOD MODE: QUANTUM PARTICLES (Data Flow) ---
+            // Only render on active/highlighted paths to maintain performance
             if (isSourceSelected || isHoveredRelated) {
-                ctx.save();
-                // Clip to path to draw inside the line
-                ctx.beginPath();
-                ctx.moveTo(source.x, source.y);
-                ctx.quadraticCurveTo(cx, cy, target.x, target.y);
-                ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([4, 20]); // Dot length, gap
-                // Animate the dash offset
-                ctx.lineDashOffset = -this.time * 50; // Speed
-                ctx.stroke();
-                ctx.restore();
+                const particleCount = 3; 
+                const speed = 0.6; 
+                
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ffffff';
+
+                for (let i = 0; i < particleCount; i++) {
+                    let t = ((this.time * speed) + (i / particleCount)) % 1;
+                    
+                    const pos = this.getQuadraticBezierPoint(t, source.x, source.y, cx, cy, target.x, target.y);
+                    
+                    ctx.beginPath();
+                    const pSize = 2 + Math.sin(this.time * 10 + i) * 0.5;
+                    ctx.arc(pos.x, pos.y, pSize, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+                }
+                
+                ctx.shadowBlur = 0;
             }
         });
     }
 
+    /**
+     * GOD MODE VISUALS: SCANNING RINGS & PULSE
+     */
     drawNodes(ctx) {
         const sortedNodes = [...this.nodes].sort((a, b) => {
             if (a.id === this.selectedNode?.id) return 1;
@@ -571,20 +597,49 @@ class KnowledgeGraph {
             
             let r = node.currentRadius;
             if (isSelected) {
-                r += Math.sin(this.time * 5) * 2; 
+                r += Math.sin(this.time * 4) * 1.5; 
             }
             r = Math.max(1, r);
-            
-            // Shadow
+
+            // --- 1. DRAW SCANNING RING (Selected Node Only) ---
+            if (isSelected) {
+                ctx.save();
+                ctx.translate(node.x, node.y);
+                
+                // Ring 1: Rotating dashed ring
+                ctx.rotate(-this.time); 
+                ctx.beginPath();
+                ctx.arc(0, 0, r + 8, 0, Math.PI * 2);
+                ctx.strokeStyle = node.color;
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 8]); 
+                ctx.globalAlpha = 0.6;
+                ctx.stroke();
+                
+                // Ring 2: Expanding pulse ring
+                ctx.rotate(this.time * 2); 
+                const pulseR = r + 4 + Math.sin(this.time * 3) * 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
+                ctx.strokeStyle = node.color;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([]); 
+                ctx.globalAlpha = 0.3 + Math.sin(this.time * 5) * 0.2; 
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+
+            // Shadow for depth
             if (isSelected || isHovered) {
-                ctx.shadowColor = node.color + 'aa';
-                ctx.shadowBlur = 25;
+                ctx.shadowColor = node.color;
+                ctx.shadowBlur = 20;
             } else {
                 ctx.shadowColor = 'rgba(0,0,0,0.1)';
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = 6;
             }
             
-            // Body
+            // --- 2. NODE BODY ---
             ctx.beginPath();
             ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
             
@@ -593,57 +648,52 @@ class KnowledgeGraph {
                 node.x, node.y, r
             );
             
-            const baseOpacity = (this.selectedNode && !isSelected && !node.highlighted) ? 0.4 : 1.0;
+            const baseOpacity = (this.selectedNode && !isSelected && !node.highlighted) ? 0.3 : 1.0;
             
             if (isSelected || isHovered || node.highlighted) {
                 grad.addColorStop(0, '#ffffff');
-                grad.addColorStop(0.3, this.hexToRgba(node.color, baseOpacity));
+                grad.addColorStop(0.4, this.hexToRgba(node.color, baseOpacity));
                 grad.addColorStop(1, this.darkenColor(node.color, 20));
                 ctx.fillStyle = grad;
             } else {
                 grad.addColorStop(0, '#ffffff');
-                grad.addColorStop(1, '#ffffff');
+                grad.addColorStop(1, '#f1f5f9');
                 ctx.fillStyle = grad;
             }
             
             ctx.fill();
             
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur = 0; 
             
+            // Border
             ctx.strokeStyle = (isSelected || isHovered) ? node.color : '#cbd5e1';
-            ctx.lineWidth = (isSelected || isHovered) ? 3 : 1.5;
+            ctx.lineWidth = (isSelected || isHovered) ? 2.5 : 1;
             ctx.stroke();
             
-            // Label
+            // --- 3. TEXT LABEL ---
             ctx.font = `600 ${this.options.fontSize}px 'Plus Jakarta Sans', sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            ctx.fillStyle = (isSelected || isHovered) ? node.color : '#475569';
-            if (isSelected) ctx.fillStyle = '#fff';
+            if (isSelected) {
+                ctx.fillStyle = '#0f172a'; 
+            } else if (isHovered) {
+                ctx.fillStyle = node.color;
+            } else {
+                ctx.fillStyle = '#64748b';
+            }
             
             let label = node.term.name;
             if (label.length > 8) label = label.slice(0, 6) + '..';
+            
+            // Text shadow for readability
+            ctx.shadowColor = 'rgba(255,255,255,0.8)';
+            ctx.shadowBlur = 4;
             ctx.fillText(label, node.x, node.y);
+            ctx.shadowBlur = 0;
         });
-    }
-
-    // Helpers
-    darkenColor(hex, percent) {
-        const num = parseInt(hex.replace('#', ''), 16);
-        const amt = Math.round(2.55 * percent);
-        const R = Math.max(0, (num >> 16) - amt);
-        const G = Math.max(0, (num >> 8 & 0x00FF) - amt);
-        const B = Math.max(0, (num & 0x0000FF) - amt);
-        return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
-    }
-
-    hexToRgba(hex, alpha) {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 }
 
+// Expose to window for external access (e.g., Konami Code)
 window.KnowledgeGraph = KnowledgeGraph;
