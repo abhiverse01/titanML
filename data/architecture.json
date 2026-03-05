@@ -1,0 +1,102 @@
+[
+  {
+    "id": "transformer",
+    "name": "Transformer Architecture",
+    "category": "NLP",
+    "shortDesc": "The neural network architecture underlying GPT, BERT, and modern LLMs.",
+    "steps": [
+      {
+        "label": "Input Embedding",
+        "desc": "Converts input tokens into dense vectors of dimension d_model.",
+        "type": "process"
+      },
+      {
+        "label": "Positional Encoding",
+        "desc": "Injects information about the order of the tokens since the model has no recurrence.",
+        "type": "process"
+      },
+      {
+        "label": "Encoder Stack (xN)",
+        "desc": "A stack of identical layers. Each layer has two sub-layers.",
+        "type": "container",
+        "children": [
+          {
+            "label": "Multi-Head Self-Attention",
+            "desc": "Allows the model to attend to different positions in the input sequence simultaneously.",
+            "type": "highlight"
+          },
+          {
+            "label": "Add & Norm",
+            "desc": "Residual connection followed by Layer Normalisation.",
+            "type": "process"
+          },
+          {
+            "label": "Feed Forward Network",
+            "desc": "Two linear transformations with a ReLU activation.",
+            "type": "process"
+          }
+        ]
+      },
+      {
+        "label": "Output Probabilities",
+        "desc": "Linear layer followed by Softmax to generate probability distribution over vocabulary.",
+        "type": "end"
+      }
+    ]
+  },
+  {
+    "id": "neural-net",
+    "name": "Basic Neural Network",
+    "category": "Deep Learning",
+    "shortDesc": "The fundamental building block of Deep Learning: Input Layers, Hidden Layers, and Output Layers.",
+    "steps": [
+      {
+        "label": "Input Layer",
+        "desc": "Receives the raw data features.",
+        "type": "start"
+      },
+      {
+        "label": "Hidden Layers (Deep)",
+        "desc": "Layers where computations and feature extraction happen using weights and biases.",
+        "type": "container",
+        "children": [
+          { "label": "Weighted Sum", "type": "process" },
+          { "label": "Activation Function (ReLU/Sigmoid)", "type": "highlight" }
+        ]
+      },
+      {
+        "label": "Output Layer",
+        "desc": "Produces the final prediction (class or value).",
+        "type": "end"
+      }
+    ]
+  },
+  {
+    "id": "rag",
+    "name": "RAG Architecture",
+    "category": "Generative AI",
+    "shortDesc": "Retrieval-Augmented Generation: Enhances LLMs by retrieving external data.",
+    "steps": [
+      {
+        "label": "User Query",
+        "desc": "The question asked by the user.",
+        "type": "start"
+      },
+      {
+        "label": "Retriever",
+        "desc": "Searches a vector database for relevant documents.",
+        "type": "process"
+      },
+      {
+        "label": "Context Injection",
+        "desc": "Combines the user query with the retrieved documents.",
+        "type": "process"
+      },
+      {
+        "label": "LLM Generator",
+        "desc": "Generates the final answer based on the augmented prompt.",
+        "type": "highlight"
+      }
+    ]
+  }
+]
