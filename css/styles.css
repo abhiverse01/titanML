@@ -1261,6 +1261,27 @@ body {
         opacity: 0;
         pointer-events: none;
     }
+
+
+
+
+   /* Hide "Add Term" text to make room for Sidebar button */
+    #addTermBtn .btn-text {
+        display: none;
+    }
+    
+    /* Reduce padding of the Add Term button so it looks like a circle icon */
+    #addTermBtn {
+        padding: 0 12px;
+    }
+    
+    /* Ensure sidebar button is always prominent */
+    #toggleSidebar {
+        margin-right: 8px;
+    }
+
+
+   
 }
 
 /* Small Mobile specific tweaks */
