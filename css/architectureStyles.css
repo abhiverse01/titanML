@@ -1,28 +1,27 @@
 /* ==========================================
-   ARCHITECTURE VISUALIZER (GOD MODE REWORKED)
+   ARCHITECTURE VISUALIZER (GOD MODE REMASTERED)
    ========================================== */
 
-/* 1. MAIN CONTAINER (Full Screen) */
+/* 1. MAIN CONTAINER */
 #archView {
     position: fixed;
     inset: 0;
     width: 100%;
     height: 100%;
-    z-index: 60; /* Above Sidebar/Graph */
+    z-index: 60; 
     background: var(--bg-primary);
     overflow-y: auto;
     display: none;
     
-    /* SUBTLE Tech Grid Background (Very Light) */
+    /* Clean Tech Grid */
     background-image: 
         linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-    background-size: 30px 30px;
+    background-size: 32px 32px;
 }
 
-/* 2. WRAPPER (Full Width Usage) */
+/* 2. WRAPPER */
 .arch-visualizer, .arch-gallery {
-    /* Clear previous constraints */
     width: 100%;
     max-width: 100%;
     padding-top: calc(var(--header-height) + 20px);
@@ -30,20 +29,18 @@
     padding-right: 20px;
     padding-bottom: 60px;
     box-sizing: border-box;
-    
-    /* Center the content grid, but allow header to be full width */
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-/* 3. VISUALIZER HEADER (Full Width) */
-/* 3. VISUALIZER HEADER (Fixed Layout) */
+/* 3. VISUALIZER HEADER (Button on Right) */
 .viz-header {
     display: flex;
+    justify-content: space-between; /* Pushes Button to Right, Title to Left */
     align-items: center;
-    width: 100%; /* Ensure header spans full width */
-    max-width: 1200px; /* Match your content max-width */
+    width: 100%;
+    max-width: 1200px;
     margin-bottom: 40px;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--border-light);
@@ -55,25 +52,31 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* GOD MODE BACK BUTTON */
+/* HEADER TEXT CONTAINER */
+.viz-title-group {
+    display: flex;
+    flex-direction: column;
+}
+
+/* BACK BUTTON (Right Side) */
 .viz-back-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px; /* Space between arrow and text */
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-light);
+    gap: 8px;
+    background: transparent; /* Ghost style */
+    border: 1px solid var(--border-medium);
     color: var(--text-secondary);
-    padding: 8px 18px;
-    border-radius: 20px; /* Pill shape (fully rounded) */
+    padding: 8px 20px;
+    border-radius: 20px;
     font-size: 0.8rem;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease;
     box-shadow: var(--shadow-sm);
-    white-space: nowrap; /* Prevents button breaking in half */
-    margin-right: 24px; /* Spacing between button and Title */
+    white-space: nowrap;
+    margin-left: 20px; /* Space from title */
 }
 
 .viz-back-btn:hover {
@@ -81,48 +84,58 @@
     color: white;
     border-color: var(--accent-primary);
     box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
-    transform: translateX(-2px); /* Subtle slide left on hover */
+    transform: translateX(2px); /* Slight nudge right on hover */
 }
 
-.viz-back-btn:active {
-    transform: translateX(0);
-    box-shadow: 0 2px 4px rgba(8, 145, 178, 0.2);
-}
-
-
-
-/* 4. GALLERY GRID (Full Width Layout) */
+/* 4. GALLERY GRID (Fixed Breaking) */
 .arch-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 24px;
     width: 100%;
-    max-width: 1200px; /* Constrain grid for readability */
+    max-width: 1200px;
+    align-items: stretch; /* CRITICAL FIX: Forces equal height cards */
 }
 
 .arch-card {
-    background: var(--bg-secondary); /* SOLID Background for readability */
+    background: var(--bg-secondary);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-lg);
     padding: 24px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy */
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
-    height: 100%;
+    min-height: 180px; /* CRITICAL FIX: Prevents 0-height cards */
     display: flex;
     flex-direction: column;
+    align-self: stretch; /* Stretches to fill grid row */
 }
 
-/* Clean Hover Effect */
+/* Tech Corner Decoration (God Mode Detail) */
+.arch-card::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 24px; height: 24px;
+    border-top: 3px solid var(--accent-primary);
+    border-right: 3px solid var(--accent-primary);
+    border-top-right-radius: var(--radius-lg);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
 .arch-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-5px);
     border-color: var(--accent-primary);
     box-shadow: var(--shadow-lg);
+    background: var(--bg-secondary);
 }
 
-/* Subtle Top Accent Bar */
+.arch-card:hover::after { opacity: 1; }
+
+/* Top Accent Bar */
 .arch-card::before {
     content: '';
     position: absolute;
@@ -135,13 +148,13 @@
 
 .arch-card:hover::before { transform: scaleX(1); }
 
-/* 5. FLOWCHART ENGINE (Optimized for Readability) */
+/* 5. FLOWCHART ENGINE (Visual Upgrade) */
 .flow-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
-    max-width: 800px; /* Keep flowchart centered and readable */
+    max-width: 800px;
 }
 
 .flow-step {
@@ -163,10 +176,11 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* The Box (Solid & Clean) */
+/* The Box (Data Chip Aesthetic) */
 .step-box {
-    background: var(--bg-secondary); /* Solid background fixes "blackish" issue */
+    background: var(--bg-secondary);
     border: 1px solid var(--border-light);
+    border-left: 4px solid var(--border-medium); /* Tech marker */
     border-radius: var(--radius-md);
     padding: 20px 24px;
     position: relative;
@@ -178,8 +192,10 @@
 
 .step-box:hover {
     border-color: var(--accent-primary);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-left-color: var(--accent-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     transform: translateY(-2px);
+    background: #fff; /* Crisp white on hover */
 }
 
 /* Connector Lines */
@@ -207,46 +223,46 @@
     z-index: 2;
 }
 
-/* Step Types (High Contrast) */
+/* Step Types (Enhanced) */
 .step-type-start .step-box {
-    border: 2px solid var(--accent-success);
+    border-left: 4px solid var(--accent-success);
     border-radius: 30px;
     text-align: center;
     background: linear-gradient(to right, var(--bg-secondary), rgba(16, 185, 129, 0.05));
 }
 
 .step-type-end .step-box {
-    border: 2px solid var(--accent-danger);
+    border-left: 4px solid var(--accent-danger);
     border-radius: 30px;
     text-align: center;
     background: linear-gradient(to right, var(--bg-secondary), rgba(239, 68, 68, 0.05));
 }
 
 .step-type-highlight .step-box {
-    border: 1px solid var(--accent-primary);
-    border-left: 5px solid var(--accent-primary);
+    border-left: 4px solid var(--accent-primary);
     background: linear-gradient(to right, var(--bg-secondary), rgba(8, 145, 178, 0.05));
 }
 
 .step-type-container .step-box {
-    background: var(--bg-tertiary); /* Distinct background for containers */
+    background: var(--bg-tertiary);
     border: 1px dashed var(--border-medium);
+    border-left-style: dashed;
 }
 
 .step-label {
     font-size: var(--font-size-md);
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.05em;
 }
 
 .step-desc {
     font-size: var(--font-size-sm);
-    color: var(--text-secondary); /* Darker than tertiary for better contrast */
-    line-height: 1.5;
-    margin-top: 8px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-top: 10px;
     padding-top: 12px;
     border-top: 1px solid var(--border-light);
 }
@@ -258,7 +274,7 @@
     gap: 16px;
     margin-top: 16px;
     padding: 16px;
-    background: var(--bg-primary); /* Contrast against parent */
+    background: var(--bg-primary);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-light);
 }
@@ -274,29 +290,27 @@
     }
     
     .arch-gallery {
-        grid-template-columns: 1fr; /* Single column on mobile */
+        grid-template-columns: 1fr;
         gap: 16px;
     }
     
     .arch-card {
         padding: 16px;
+        min-height: 140px; /* Adjust for mobile */
     }
     
-    /* Always show description on mobile */
     .step-desc {
         display: block; 
         opacity: 1;
     }
 
-    /* Adjust spacing for touch */
     .flow-step { margin-bottom: 24px; }
     .flow-step:not(:last-child)::after { height: 24px; bottom: -24px; }
     .flow-step:not(:last-child)::before { bottom: -24px; transform: translateX(-50%) translateY(12px); }
 }
 
-/* 8. DARK MODE SUPPORT */
+/* 8. DARK MODE */
 @media (prefers-color-scheme: dark) {
-    /* Darker Grid */
     #archView {
         background-image: 
             linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
