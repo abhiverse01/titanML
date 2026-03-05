@@ -770,7 +770,7 @@ el.textContent = data.value.toLocaleString();
 
 }catch(err){
 console.error("Visitor counter error",err);
-el.textContent = "—";
+el.textContent = "…";
 }
 
 }
