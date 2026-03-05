@@ -1,6 +1,6 @@
 /**
- * AI Knowledge Graph Visualization - GOD MODE EDITION
- * Features: Physics Engine, Adaptive Zoom/pan, Connection Optimization, Quantum Packets, Scanning Rings
+ * AI Knowledge Graph Visualization - GOD MODE + MOBILE EDITION
+ * Features: Physics, Zoom/Pan (Mouse + Pinch), Quantum Packets, Scanning Rings, Mobile Optimized
  */
 
 class KnowledgeGraph {
@@ -65,6 +65,10 @@ class KnowledgeGraph {
             minVelocity: 0.05
         };
         
+        // Mobile Pinch State
+        this.initialPinchDistance = null;
+        this.initialZoom = 1;
+
         this.onNodeSelect = null;
         this.onHoverChange = null;
         
@@ -87,10 +91,10 @@ class KnowledgeGraph {
         this.canvas.addEventListener('wheel', (e) => this.handleWheel(e), { passive: false });
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
         
-        // Touch
+        // Touch Events (Mobile)
         this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
         this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
-        this.canvas.addEventListener('touchend', () => this.handleMouseUp());
+        this.canvas.addEventListener('touchend', () => this.handleTouchEnd());
     }
     
     handleResize() {
@@ -181,7 +185,7 @@ class KnowledgeGraph {
             }
         });
         
-        // Initial physics warm-up
+        // Warm up physics
         for (let i = 0; i < 50; i++) {
             this.simulatePhysics(0.15);
         }
@@ -264,13 +268,18 @@ class KnowledgeGraph {
     }
     
     findNodeAt(wx, wy) {
+        // "Fat Finger" buffer for mobile: adds 10px tolerance
+        const touchBuffer = 10; 
+
         for (let i = this.nodes.length - 1; i >= 0; i--) {
             const node = this.nodes[i];
             if (!node.visible) continue;
             const dx = wx - node.x;
             const dy = wy - node.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist <= node.radius + 5) return node;
+            
+            // Check distance with buffer
+            if (dist <= node.radius + 5 + touchBuffer) return node;
         }
         return null;
     }
@@ -306,15 +315,41 @@ class KnowledgeGraph {
     
     handleTouchStart(e) {
         if (e.touches.length === 1) {
-            e.preventDefault();
+            // Single Touch: Pan or Click
+            e.preventDefault(); // Stop scrolling
             const touch = e.touches[0];
-            this.isDragging = true;
-            this.lastMouse = { x: touch.clientX, y: touch.clientY };
+            const rect = this.canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            // Check for node tap
+            const world = this.screenToWorld(x, y);
+            const tappedNode = this.findNodeAt(world.x, world.y);
+            
+            if (tappedNode) {
+                this.handleClick({ clientX: touch.clientX, clientY: touch.clientY }); // Simulate click
+                this.hoveredNode = tappedNode;
+                this.canvas.style.cursor = 'pointer';
+            } else {
+                this.isDragging = true;
+                this.lastMouse = { x: touch.clientX, y: touch.clientY };
+                this.hoveredNode = null;
+                this.canvas.style.cursor = 'grabbing';
+            }
+        } else if (e.touches.length === 2) {
+            // Pinch Zoom Start
+            e.preventDefault();
+            this.isDragging = false;
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            this.initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
+            this.initialZoom = this.zoom;
         }
     }
 
     handleTouchMove(e) {
         if (e.touches.length === 1 && this.isDragging) {
+            // Panning
             e.preventDefault();
             const touch = e.touches[0];
             const dx = touch.clientX - this.lastMouse.x;
@@ -323,7 +358,32 @@ class KnowledgeGraph {
             this.panY += dy;
             this.lastMouse.x = touch.clientX;
             this.lastMouse.y = touch.clientY;
+        } else if (e.touches.length === 2 && this.initialPinchDistance) {
+            // Pinch Zooming
+            e.preventDefault();
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const currentDistance = Math.sqrt(dx * dx + dy * dy);
+
+            const zoomFactor = currentDistance / this.initialPinchDistance;
+            let newZoom = this.initialZoom * zoomFactor;
+            newZoom = Math.max(0.2, Math.min(4, newZoom));
+            
+            // Zoom towards center of screen (Simpler than pinch center for this engine)
+            const scaleChange = newZoom / this.zoom;
+            const cx = this.width / 2;
+            const cy = this.height / 2;
+
+            this.panX = cx - (cx - this.panX) * scaleChange;
+            this.panY = cy - (cy - this.panY) * scaleChange;
+            this.zoom = newZoom;
         }
+    }
+
+    handleTouchEnd() {
+        this.isDragging = false;
+        this.initialPinchDistance = null;
+        this.canvas.style.cursor = this.hoveredNode ? 'pointer' : 'grab';
     }
     
     handleMouseUp() {
@@ -352,6 +412,9 @@ class KnowledgeGraph {
     }
     
     handleClick(e) {
+        // For touch, we pass simulated events, so check clientX exists
+        if (!e.clientX) return; 
+
         if (this.hoveredNode) {
             this.selectedNode = this.hoveredNode;
             this.selectedNode.targetRadius = this.selectedNode.radius * 1.2;
@@ -360,6 +423,9 @@ class KnowledgeGraph {
             }, 200);
             
             if (this.onNodeSelect) this.onNodeSelect(this.hoveredNode.term);
+        } else {
+            // Deselect if clicking empty space
+            this.selectedNode = null;
         }
     }
     
@@ -416,7 +482,6 @@ class KnowledgeGraph {
 
     // --- RENDERING HELPERS ---
 
-    // Helper: Calculate point on Quadratic Bezier Curve (t = 0 to 1)
     getQuadraticBezierPoint(t, sx, sy, cx, cy, tx, ty) {
         return {
             x: (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * cx + t * t * tx,
@@ -476,9 +541,6 @@ class KnowledgeGraph {
         }
     }
 
-    /**
-     * GOD MODE VISUALS: QUANTUM PACKETS & GRADIENTS
-     */
     drawEdges(ctx) {
         const selected = this.selectedNode;
         const hovered = this.hoveredNode;
@@ -489,16 +551,14 @@ class KnowledgeGraph {
             
             if (!source || !target || !source.visible || !target.visible) return;
             
-            // Determine relevance
             const isSourceSelected = selected && (selected.id === source.id || selected.id === target.id);
             const isHoveredRelated = hovered && (hovered.id === source.id || hovered.id === target.id);
             
-            // Opacity logic: Fade unrelated edges when a node is selected
             let opacity = 0.6;
             if (selected && !isSourceSelected) {
-                opacity = 0.08; // Fade out unrelated
+                opacity = 0.08; 
             } else if (isSourceSelected) {
-                opacity = 1.0; // Highlight primary
+                opacity = 1.0; 
             } else if (hovered && !isHoveredRelated) {
                 opacity = 0.15;
             }
@@ -507,7 +567,7 @@ class KnowledgeGraph {
             const dy = target.y - source.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             
-            // --- 1. DRAW THE CURVED LINE ---
+            // 1. Curve
             const mx = (source.x + target.x) / 2;
             const my = (source.y + target.y) / 2;
             const offset = dist * 0.15; 
@@ -519,7 +579,6 @@ class KnowledgeGraph {
             ctx.moveTo(source.x, source.y);
             ctx.quadraticCurveTo(cx, cy, target.x, target.y);
             
-            // Gradient Line
             const grad = ctx.createLinearGradient(source.x, source.y, target.x, target.y);
             grad.addColorStop(0, this.hexToRgba(source.color, opacity));
             grad.addColorStop(1, this.hexToRgba(target.color, opacity));
@@ -530,7 +589,7 @@ class KnowledgeGraph {
             ctx.lineJoin = 'round';
             ctx.stroke();
             
-            // --- 2. DRAW ARROW HEAD ---
+            // 2. Arrow
             const tangentX = target.x - cx;
             const tangentY = target.y - cy;
             const angle = Math.atan2(tangentY, tangentX);
@@ -553,8 +612,7 @@ class KnowledgeGraph {
             ctx.fill();
             ctx.restore();
 
-            // --- 3. GOD MODE: QUANTUM PARTICLES (Data Flow) ---
-            // Only render on active/highlighted paths to maintain performance
+            // 3. Quantum Packets
             if (isSourceSelected || isHoveredRelated) {
                 const particleCount = 3; 
                 const speed = 0.6; 
@@ -579,9 +637,6 @@ class KnowledgeGraph {
         });
     }
 
-    /**
-     * GOD MODE VISUALS: SCANNING RINGS & PULSE
-     */
     drawNodes(ctx) {
         const sortedNodes = [...this.nodes].sort((a, b) => {
             if (a.id === this.selectedNode?.id) return 1;
@@ -601,12 +656,11 @@ class KnowledgeGraph {
             }
             r = Math.max(1, r);
 
-            // --- 1. DRAW SCANNING RING (Selected Node Only) ---
+            // 1. Scanning Ring
             if (isSelected) {
                 ctx.save();
                 ctx.translate(node.x, node.y);
                 
-                // Ring 1: Rotating dashed ring
                 ctx.rotate(-this.time); 
                 ctx.beginPath();
                 ctx.arc(0, 0, r + 8, 0, Math.PI * 2);
@@ -616,7 +670,6 @@ class KnowledgeGraph {
                 ctx.globalAlpha = 0.6;
                 ctx.stroke();
                 
-                // Ring 2: Expanding pulse ring
                 ctx.rotate(this.time * 2); 
                 const pulseR = r + 4 + Math.sin(this.time * 3) * 3;
                 ctx.beginPath();
@@ -630,7 +683,7 @@ class KnowledgeGraph {
                 ctx.restore();
             }
 
-            // Shadow for depth
+            // Shadow
             if (isSelected || isHovered) {
                 ctx.shadowColor = node.color;
                 ctx.shadowBlur = 20;
@@ -639,7 +692,7 @@ class KnowledgeGraph {
                 ctx.shadowBlur = 6;
             }
             
-            // --- 2. NODE BODY ---
+            // 2. Body
             ctx.beginPath();
             ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
             
@@ -670,7 +723,7 @@ class KnowledgeGraph {
             ctx.lineWidth = (isSelected || isHovered) ? 2.5 : 1;
             ctx.stroke();
             
-            // --- 3. TEXT LABEL ---
+            // 3. Text
             ctx.font = `600 ${this.options.fontSize}px 'Plus Jakarta Sans', sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -686,7 +739,6 @@ class KnowledgeGraph {
             let label = node.term.name;
             if (label.length > 8) label = label.slice(0, 6) + '..';
             
-            // Text shadow for readability
             ctx.shadowColor = 'rgba(255,255,255,0.8)';
             ctx.shadowBlur = 4;
             ctx.fillText(label, node.x, node.y);
@@ -695,5 +747,4 @@ class KnowledgeGraph {
     }
 }
 
-// Expose to window for external access (e.g., Konami Code)
 window.KnowledgeGraph = KnowledgeGraph;
