@@ -91,6 +91,8 @@ class ArchitectureManager {
     // --- VIEW SWITCHING ---
 
     async showVisual(archId) {
+        console.log("showVisual called with ID:", archId);
+
         // 1. Ensure data is loaded
         if (!this.isLoaded) {
             await this.init();
@@ -110,7 +112,7 @@ class ArchitectureManager {
             history.pushState({ mode: 'architecture' }, '', '#arch');
         }
 
-        // 4. Get the Header (Sibling of visualizer)
+        // 4. Get the Header
         const header = this.container.querySelector('.viz-header');
 
         if (!archId) {
@@ -124,15 +126,19 @@ class ArchitectureManager {
                     </div>
                 `;
             }
-            // Clear visualizer, show gallery
             this.visualizerContainer.innerHTML = ''; 
             this.visualizerContainer.style.display = 'none';
             this.galleryContainer.style.display = 'grid';
         } else {
             // --- SHOW SPECIFIC ARCHITECTURE ---
             const arch = this.data.find(a => a.id === archId);
+            
+            // DEBUG LOG
+            console.log("Found Architecture Object:", arch);
+
             if (!arch) {
-                console.error("Architecture not found:", archId);
+                console.error("Architecture not found for ID:", archId);
+                alert("Architecture data missing.");
                 return;
             }
 
@@ -146,11 +152,13 @@ class ArchitectureManager {
                 `;
             }
 
-            // FIX: Instead of finding a child, we inject the ENTIRE structure 
-            // including the .flow-container class needed for CSS
+            // Render Steps
+            const stepsHtml = this.renderSteps(arch.steps);
+            console.log("Generated HTML Length:", stepsHtml.length); // Check if HTML is generated
+
             this.visualizerContainer.innerHTML = `
                 <div class="flow-container">
-                    ${this.renderSteps(arch.steps)}
+                    ${stepsHtml}
                 </div>
             `;
             
@@ -165,8 +173,16 @@ class ArchitectureManager {
             return;
         }
 
+        // PERFORMANCE FIX: Remove transition temporarily for instant switch
+        this.container.style.transition = 'none';
+        
         this.container.style.display = 'none';
         this.container.classList.remove('active');
+        
+        // Restore transition after a brief delay (optional, but good practice)
+        setTimeout(() => {
+            this.container.style.transition = '';
+        }, 50);
         
         const content = document.getElementById('content');
         const sidebar = document.querySelector('.sidebar');
@@ -177,6 +193,8 @@ class ArchitectureManager {
         this.currentView = 'graph';
     }
 
+
+    
     // --- RECURSIVE RENDERER ---
     renderSteps(steps) {
         if(!steps) return '';
