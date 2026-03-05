@@ -1301,3 +1301,100 @@ body {
         scroll-behavior: auto !important;
     }
 }
+
+/* =========================================
+   MOBILE RESPONSIVENESS FIXES
+   ========================================= */
+
+@media (max-width: 768px) {
+    
+    /* 1. Prevent browser scrolling when touching the graph canvas 
+       This is CRITICAL for the pinch-to-zoom to work without scrolling the page */
+    .graph-container,
+    #graphCanvas {
+        touch-action: none;
+    }
+
+    /* 2. Sidebar Transformation: Convert to Slide-out Drawer */
+    .layout {
+        position: relative; /* Establish context for absolute sidebar */
+    }
+
+    .sidebar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 85%; /* Take up most of screen on mobile */
+        max-width: 320px;
+        background: #ffffff;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.15);
+        transform: translateX(-100%); /* Hide off-screen by default */
+        z-index: 100;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Class to show sidebar */
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    /* 3. Overlay background when sidebar is open */
+    /* You might need to add this div <div class="sidebar-overlay"></div> to your HTML if it doesn't exist */
+    .sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.4); /* Dark dim */
+        z-index: 90;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(2px);
+    }
+
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* 4. Ensure content takes full width */
+    .content {
+        width: 100% !important;
+    }
+
+    /* 5. Adjust Header for Mobile */
+    .header-center {
+        display: none; /* Hide search bar on very small screens to save space, or make it smaller */
+    }
+    
+    .header-left {
+        flex: 1;
+    }
+
+    /* 6. Adjust Panel (Details) for Mobile */
+    .panel {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto !important; /* Override top positioning */
+        width: 100% !important;
+        height: 60vh !important; /* Take up bottom 60% */
+        border-radius: 20px 20px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+        z-index: 200;
+        box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+    }
+
+    .panel.open {
+        transform: translateY(0);
+    }
+
+    /* Hide close button on mobile if you use swipe-down to close (optional), 
+       but keeping it is safer for accessibility */
+    .panel-close {
+        top: 15px;
+        right: 15px;
+    }
+}
