@@ -34,31 +34,62 @@ class ArchitectureManager {
         `).join('');
     }
 
+    
     // 2. Switch to Visualizer View
-    showVisual(archId) {
-        const arch = this.data.find(a => a.id === archId);
-        if (!arch) return;
+    async showVisual(archId) {
+        // 1. Ensure data is loaded before doing anything
+        if (!this.isLoaded) {
+            await this.init();
+        }
 
-        // Hide Content (Graph) and Sidebar, Show Arch View
-        document.getElementById('content').style.display = 'none';
-        document.querySelector('.sidebar').classList.add('hidden'); // Optional: hide sidebar for focus
+        // 2. Hide Content (Graph) and Sidebar, Show Arch View
+        const content = document.getElementById('content');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if(content) content.style.display = 'none';
+        if(sidebar) sidebar.classList.add('hidden'); 
+        
         this.container.style.display = 'flex';
         this.container.classList.add('active');
 
-        // Render Header
-        const header = this.visualizerContainer.querySelector('.viz-header');
-        header.innerHTML = `
-            <button class="viz-back-btn" onclick="window.archManager.hideVisual()">← Back</button>
-            <div>
-                <h2 style="font-size: 1.5rem; color: var(--text-primary);">${arch.name}</h2>
-                <p style="color: var(--text-tertiary);">${arch.shortDesc}</p>
-            </div>
-        `;
+        // 3. Handle View Logic
+        if (!archId) {
+            // --- SHOW GALLERY ---
+            const header = this.visualizerContainer.querySelector('.viz-header');
+            header.innerHTML = `
+                <button class="viz-back-btn" onclick="window.archManager.hideVisual()">← Back to Graph</button>
+                <div>
+                    <h2 style="font-size: 1.5rem; color: var(--text-primary);">AI Architectures</h2>
+                    <p style="color: var(--text-tertiary);">Explore the blueprints of modern AI.</p>
+                </div>
+            `;
+            // Ensure gallery is visible, visualizer is hidden
+            this.visualizerContainer.style.display = 'none';
+            this.galleryContainer.style.display = 'grid';
+        } else {
+            // --- SHOW SPECIFIC ARCHITECTURE ---
+            const arch = this.data.find(a => a.id === archId);
+            if (!arch) return;
 
-        // Render Flowchart
-        const flowContainer = this.visualizerContainer.querySelector('.flow-container');
-        flowContainer.innerHTML = this.renderSteps(arch.steps);
+            const header = this.visualizerContainer.querySelector('.viz-header');
+            header.innerHTML = `
+                <button class="viz-back-btn" onclick="window.archManager.showVisual(null)">← Back to Gallery</button>
+                <div>
+                    <h2 style="font-size: 1.5rem; color: var(--text-primary);">${arch.name}</h2>
+                    <p style="color: var(--text-tertiary);">${arch.shortDesc}</p>
+                </div>
+            `;
+
+            // Render Flowchart
+            const flowContainer = this.visualizerContainer.querySelector('.flow-container');
+            flowContainer.innerHTML = this.renderSteps(arch.steps);
+            
+            // Swap visibility
+            this.galleryContainer.style.display = 'none';
+            this.visualizerContainer.style.display = 'block';
+        }
     }
+    
 
     // 3. Hide Visualizer (Return to Graph)
     hideVisual() {
