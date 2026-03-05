@@ -145,18 +145,37 @@ class App {
             this.handleRouteChange();
         });
 
+
         // Sidebar toggle
         const toggleBtn = document.getElementById('toggleSidebar');
+        const overlay = document.getElementById('sidebarOverlay'); // Get the new overlay div
+    
         if (toggleBtn) {
             toggleBtn.addEventListener('click', () => {
                 const sidebar = document.getElementById('sidebar');
-                if (window.innerWidth <= 1024) {
-                    sidebar.classList.toggle('open'); 
+                
+                // Check if we are in mobile view (Match CSS @media max-width: 768px)
+                if (window.innerWidth < 768) {
+                    // Mobile: Slide in/out using 'active' class
+                    sidebar.classList.toggle('active');
+                    if (overlay) overlay.classList.toggle('active');
                 } else {
+                    // Desktop: Collapse/Expand logic (keep your existing desktop logic)
                     sidebar.classList.toggle('collapsed');
                 }
             });
         }
+    
+        // ADDED THIS: Close sidebar when clicking the dark overlay
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            });
+        }
+
+    // ... sidebar toggle logic fixed above ...
         
         // Category list
         const categoryList = document.getElementById('categoryList');
