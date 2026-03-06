@@ -1,0 +1,60 @@
+{
+  "paths": [
+    {
+      "id": "ml-foundations",
+      "title": "ML Foundations",
+      "description": "Core concepts required to understand modern machine learning algorithms.",
+      "difficulty": "Beginner",
+      "steps": [
+        "Linear Algebra",
+        "Probability & Statistics",
+        "Gradient Descent",
+        "Loss Functions",
+        "Overfitting vs Underfitting",
+        "Bias-Variance Tradeoff"
+      ]
+    },
+    {
+      "id": "deep-learning",
+      "title": "Deep Learning Engineer",
+      "description": "Master the architectures (CNN, RNN, Transformer) that power modern AI.",
+      "difficulty": "Intermediate",
+      "steps": [
+        "Neural Networks",
+        "Backpropagation",
+        "Activation Functions",
+        "CNNs",
+        "RNNs & LSTMs",
+        "Transformers"
+      ]
+    },
+    {
+      "id": "llm-engineer",
+      "title": "LLM Engineer",
+      "description": "Master the concepts behind GPT, BERT, and the latest generative models.",
+      "difficulty": "Advanced",
+      "paths": [
+        {
+          "id": "transformer-arch",
+          "title": "Transformer Architecture",
+          "description": "Deep dive into Attention, Positional Encoding, and Decoding strategies.",
+          "difficulty": "Advanced"
+        },
+        {
+          "id": "tokenization",
+          "broadCategory": "NLP",
+          "title": "Tokenization & Embeddings",
+          "description": "How text becomes numbers (Vectors) that AI understands.",
+          "difficulty": "Intermediate"
+        },
+        {
+          "id": "rag",
+          "broadCategory": "RAG",
+          "title": "Retrieval Augmented Generation",
+          "description": "Connecting Large Language Models to external data sources.",
+          "difficulty": "Advanced"
+        }
+      ]
+    }
+  ]
+}
