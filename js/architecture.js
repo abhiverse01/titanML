@@ -5,13 +5,14 @@ class ArchitectureManager {
         this.galleryContainer = document.getElementById('archGallery');
         this.visualizerContainer = document.getElementById('archVisualizer');
         this.isLoaded = false;
-        this.currentView = 'graph'; // 'graph' or 'architecture'
-        
+        this.currentView = 'graph';   // 'graph' | 'gallery' | 'architecture'
+        this.currentArchId = null;    // FIX #3: track which arch is open (null = gallery)
+
         // Bind methods to keep 'this' context
         this.handleGalleryClick = this.handleGalleryClick.bind(this);
-        this.handleViewClick = this.handleViewClick.bind(this);
-        this.handlePopState = this.handlePopState.bind(this);
-        
+        this.handleViewClick    = this.handleViewClick.bind(this);
+        this.handlePopState     = this.handlePopState.bind(this);
+
         this.init();
     }
 
@@ -31,17 +32,12 @@ class ArchitectureManager {
     }
 
     setupEventListeners() {
-        // 1. Listen for clicks on the Gallery Grid
         if (this.galleryContainer) {
             this.galleryContainer.addEventListener('click', this.handleGalleryClick);
         }
-
-        // 2. Listen for clicks ANYWHERE in the Architecture View (Catches Back Button)
         if (this.container) {
             this.container.addEventListener('click', this.handleViewClick);
         }
-
-        // 3. Listen for Browser Back Button
         window.addEventListener('popstate', this.handlePopState);
     }
 
@@ -63,14 +59,31 @@ class ArchitectureManager {
     }
 
     handleBackClick() {
-        if (this.currentView === 'architecture') {
+        // FIX #1 + #2: always use history.back() so popstate handles
+        // the correct state transition (arch-detail → gallery → graph)
+        if (this.currentView === 'gallery' || this.currentView === 'architecture') {
             window.history.back();
         }
     }
 
+    // FIX #1 + #2: popstate now restores the correct view based on saved state
     handlePopState(event) {
-        if (this.currentView === 'architecture') {
-            this.hideVisual(false);
+        const state = event.state;
+
+        if (state && state.mode === 'architecture') {
+            // Popped to an arch-detail state (shouldn't normally happen via back,
+            // but handles forward navigation correctly)
+            this._activateContainer();
+            this._showArchView(state.archId);
+        } else if (state && state.mode === 'gallery') {
+            // Popped back from arch-detail → restore gallery
+            this._activateContainer();
+            this._showGalleryView();
+        } else {
+            // Popped all the way back → hide the arch view entirely
+            if (this.currentView !== 'graph') {
+                this.hideVisual(false);
+            }
         }
     }
 
@@ -78,7 +91,6 @@ class ArchitectureManager {
 
     renderGallery() {
         if (!this.galleryContainer) return;
-        
         this.galleryContainer.innerHTML = this.data.map(arch => `
             <div class="arch-card" data-id="${arch.id}">
                 <div class="arch-category">${arch.category}</div>
@@ -91,118 +103,141 @@ class ArchitectureManager {
     // --- VIEW SWITCHING ---
 
     async showVisual(archId) {
-        console.log("showVisual called with ID:", archId);
-
-        // 1. Ensure data is loaded
         if (!this.isLoaded) {
             await this.init();
         }
 
-        const content = document.getElementById('content');
-        const sidebar = document.querySelector('.sidebar');
-        
-        // 2. Show Architecture Container
-        if(content) content.style.display = 'none';
-        if(sidebar) sidebar.style.display = 'none'; 
-        this.container.style.display = 'flex';
-        this.currentView = 'architecture';
-
-        // 3. Update Browser History
-        if (window.location.hash !== '#arch') {
-            history.pushState({ mode: 'architecture' }, '', '#arch');
-        }
-
-        // 4. Get the Header
-        const header = this.container.querySelector('.viz-header');
+        this._activateContainer();
 
         if (!archId) {
             // --- SHOW GALLERY ---
-            if (header) {
-                header.innerHTML = `
-                    <button class="viz-back-btn">← Back to Graph</button>
-                    <div>
-                        <h2 style="font-size: 1.5rem; color: var(--text-primary);">AI Architectures</h2>
-                        <p style="color: var(--text-tertiary);">Explore the blueprints of modern AI.</p>
-                    </div>
-                `;
-            }
-            this.visualizerContainer.innerHTML = ''; 
-            this.visualizerContainer.style.display = 'none';
-            this.galleryContainer.style.display = 'grid';
+            // FIX #2: push a gallery-specific history state
+            history.pushState({ mode: 'gallery' }, '', '#arch');
+            this._showGalleryView();
         } else {
             // --- SHOW SPECIFIC ARCHITECTURE ---
-            const arch = this.data.find(a => a.id === archId);
-            
-            // DEBUG LOG
-            console.log("Found Architecture Object:", arch);
+            // FIX #2: always push a new state so browser back returns to gallery first
+            history.pushState({ mode: 'architecture', archId }, '', '#arch');
+            this._showArchView(archId);
+        }
+    }
 
-            if (!arch) {
-                console.error("Architecture not found for ID:", archId);
-                alert("Architecture data missing.");
-                return;
-            }
+    // FIX #9: extracted helper — shows/hides the outer container & sidebar once
+    _activateContainer() {
+        const content = document.getElementById('content');
+        const sidebar = document.querySelector('.sidebar');
 
-            if (header) {
-                header.innerHTML = `
-                    <button class="viz-back-btn">← Back to Gallery</button>
-                    <div>
-                        <h2 style="font-size: 1.5rem; color: var(--text-primary);">${arch.name}</h2>
-                        <p style="color: var(--text-tertiary);">${arch.shortDesc}</p>
-                    </div>
-                `;
-            }
+        if (content) content.style.display = 'none';
+        if (sidebar) sidebar.style.display = 'none';
+        this.container.style.display = 'flex';
+        this.currentView = 'architecture'; // outer state (inside arch section)
+    }
 
-            // Render Steps
-            const stepsHtml = this.renderSteps(arch.steps);
-            console.log("Generated HTML Length:", stepsHtml.length); // Check if HTML is generated
+    // FIX #9: dedicated gallery renderer
+    _showGalleryView() {
+        this.currentArchId = null;          // FIX #3
+        this.currentView = 'gallery';
 
-            this.visualizerContainer.innerHTML = `
-                <div class="flow-container">
-                    ${stepsHtml}
+        const header = this.container.querySelector('.viz-header');
+        if (header) {
+            header.innerHTML = `
+                <button class="viz-back-btn">← Back to Graph</button>
+                <div>
+                    <h2 style="font-size: 1.5rem; color: var(--text-primary);">AI Architectures</h2>
+                    <p style="color: var(--text-tertiary);">Explore the blueprints of modern AI.</p>
                 </div>
             `;
-            
-            this.galleryContainer.style.display = 'none';
+        }
+
+        // FIX #5: null-guard before access
+        if (this.visualizerContainer) {
+            this.visualizerContainer.innerHTML = '';
+            this.visualizerContainer.style.display = 'none';
+        }
+        if (this.galleryContainer) {
+            this.galleryContainer.style.display = 'grid';
+        }
+    }
+
+    // FIX #9: dedicated arch-detail renderer
+    _showArchView(archId) {
+        const arch = this.data.find(a => a.id === archId);
+
+        if (!arch) {
+            console.error('Architecture not found for ID:', archId);
+            // FIX #4: replaced alert() with a graceful inline error message
+            if (this.visualizerContainer) {
+                this.visualizerContainer.innerHTML = `
+                    <p style="color: var(--text-tertiary); padding: 2rem;">
+                        Architecture data not found for "${archId}".
+                    </p>`;
+                this.visualizerContainer.style.display = 'block';
+            }
+            return;
+        }
+
+        this.currentArchId = archId;        // FIX #3
+        this.currentView = 'architecture';
+
+        const header = this.container.querySelector('.viz-header');
+        if (header) {
+            header.innerHTML = `
+                <button class="viz-back-btn">← Back to Gallery</button>
+                <div>
+                    <h2 style="font-size: 1.5rem; color: var(--text-primary);">${arch.name}</h2>
+                    <p style="color: var(--text-tertiary);">${arch.shortDesc}</p>
+                </div>
+            `;
+        }
+
+        // FIX #5: null-guard before access
+        if (this.visualizerContainer) {
+            this.visualizerContainer.innerHTML = `
+                <div class="flow-container">
+                    ${this.renderSteps(arch.steps)}
+                </div>
+            `;
             this.visualizerContainer.style.display = 'block';
+        }
+        if (this.galleryContainer) {
+            this.galleryContainer.style.display = 'none';
         }
     }
 
     hideVisual(manageHistory = true) {
-        // PERFORMANCE FIX: Remove transitions immediately for instant visual switch
+        // FIX #10: restore transition after hiding so future shows aren't broken
         this.container.style.transition = 'none';
-        
-        // 1. Instantly hide Architecture View
         this.container.style.display = 'none';
         this.container.classList.remove('active');
-        
-        // 2. Instantly restore Main View
+
         const content = document.getElementById('content');
         const sidebar = document.querySelector('.sidebar');
-        
-        if(content) content.style.display = 'flex';
-        if(sidebar) sidebar.style.display = 'flex';
-        
-        this.currentView = 'graph';
 
-        // 3. Handle URL without triggering slow browser navigation
-        // If the UI button was clicked, we manually clear the hash for speed.
-        // If the browser Back button was clicked, we let it handle the hash change (via popstate).
+        if (content) content.style.display = 'flex';
+        if (sidebar) sidebar.style.display = 'flex';
+
+        this.currentView = 'graph';
+        this.currentArchId = null;          // FIX #3
+
+        // Re-enable transitions on next frame so restoring doesn't skip animations
+        requestAnimationFrame(() => {
+            this.container.style.transition = '';  // FIX #10
+        });
+
         if (manageHistory && window.location.hash === '#arch') {
-            // Manually push state to clear hash (Faster than history.back())
-            history.pushState(null, null, ' '); 
-            // Note: If this causes issues with the browser back button, stick to history.back() 
-            // but this manual clear usually feels "snappier".
+            // FIX #6: use pathname instead of ' ' to reliably clear the hash
+            history.pushState(null, '', window.location.pathname);
         }
     }
 
-
-    
     // --- RECURSIVE RENDERER ---
     renderSteps(steps) {
-        if(!steps) return '';
-        return steps.map((step, index) => {
+        // FIX #8: guard both null/undefined and empty array
+        if (!steps || !steps.length) return '';
+
+        return steps.map((step) => {   // FIX #7: removed unused `index` param
             let typeClass = `step-type-${step.type || 'process'}`;
-            
+
             let childrenHtml = '';
             if (step.children && step.children.length > 0) {
                 typeClass += ' step-type-container';
