@@ -1,56 +1,64 @@
 /* ==========================================
-   ARCHITECTURE VISUALIZER — GOD MODE
+   ARCHITECTURE VISUALIZER — GOD MODE V3
    ==========================================
-   Fixes: dark mode system, hardcoded colors,
-   z-index vars, double gallery def, connector
-   fragility, spine perf, back btn direction,
-   stagger range, missing node types.
-   
-   Adds: decision/diamond, parallel lanes,
-   annotation, loop-back, draw-in connectors,
-   richer card interactions, consistent layout.
+   Fixes from V2:
+   1.  STRUCTURAL: .arch-gallery-wrapper separates header from grid
+   2.  Back button moved LEFT — conventional nav position
+   3.  --accent-warning-rgb defined in :root (was missing, used 6x)
+   4.  Diamond clip-path + box-shadow: switched to filter:drop-shadow
+   5.  Duplicate gradient border on viz-header removed — ::after only
+   6.  viz-header background set explicitly (gradient-border fill fix)
+   7.  loopSpin on inline ::after → display:inline-block added
+   8.  loopDash uses border-color opacity pulse (was SVG stroke-dashoffset)
+   9.  parallel-header: removed dead display:inline-block
+   10. connectorDraw: removed animation-delay:inherit (doesn't work on ::after)
+   11. Layout variables moved to :root for safe reuse outside #archView
+   12. flow-step-parallel missing stagger — nth-child delays added
+   13. Decision step connector gap fix — overrides connector bottom calc
+   14. Annotation connector translateX offset accounted for
+   15. arch-card transition extended to include background
    ========================================== */
 
 /* ==========================================
-   0. LOCAL VARIABLES
-   Centralize layout + connector constants
+   0. GLOBAL VARIABLES
+   FIX: Moved out of #archView to :root so they
+   work on .arch-gallery even if used standalone.
+   Added --accent-warning-rgb (was referenced but never defined).
    ========================================== */
-#archView {
-    /* Layout */
+:root {
     --arch-max-width: 960px;
     --arch-card-min: 300px;
-    
-    /* Connector system — change ONE value, all connectors update */
-    --connector-gap: 52px;     /* Vertical space between steps */
-    --connector-width: 2px;    /* Line thickness */
+
+    --connector-gap: 52px;
+    --connector-width: 2px;
     --connector-color: var(--border-medium);
     --connector-arrow-size: 7px;
 
-    /* Node sizing */
     --node-max-width: 620px;
     --node-padding: 26px 34px;
     --node-radius: 14px;
 
-    /* Spine */
     --spine-width: 2px;
-    --spine-color: var(--accent-primary);
-
-    /* Stagger base */
     --stagger-base: 80ms;
+
+    --branch-indent: 40px;
+    --branch-line-offset: calc(var(--branch-indent) + 1px);
+
+    /* FIX: These were used with inline fallbacks only — now properly defined */
+    --accent-warning-rgb: 245, 158, 11;
+    --accent-success-rgb: 16, 185, 129;
+    --accent-danger-rgb: 239, 68, 68;
+    --accent-secondary-rgb: 99, 102, 241;
 }
 
 /* ==========================================
    1. MAIN CONTAINER
-   FIX: z-index uses variable from main CSS.
-   GOD MODE: Richer grid texture.
    ========================================== */
 #archView {
     position: fixed;
     inset: 0;
     width: 100%;
     height: 100%;
-    /* FIX: Use --z-panel (50) + 10 = 60 for desktop.
-       Below sidebar overlay (100) and modal (200). */
     z-index: 60;
     background: var(--bg-primary);
     overflow-y: auto;
@@ -58,18 +66,14 @@
     display: none;
     scroll-behavior: smooth;
 
-    /* GOD MODE: Layered tech grid — major + minor lines */
     background-image:
-        /* Major grid */
         linear-gradient(rgba(var(--accent-primary-rgb), 0.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(var(--accent-primary-rgb), 0.04) 1px, transparent 1px),
-        /* Minor grid */
         linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
     background-size: 120px 120px, 120px 120px, 30px 30px, 30px 30px;
 }
 
-/* Scrollbar matching main CSS */
 #archView::-webkit-scrollbar { width: 6px; }
 #archView::-webkit-scrollbar-track { background: transparent; }
 #archView::-webkit-scrollbar-thumb {
@@ -81,8 +85,16 @@
 
 /* ==========================================
    2. WRAPPERS
-   FIX: .arch-visualizer and .arch-gallery are
-   no longer grouped — each gets its own display.
+   ==========================================
+   FIX — ROOT CAUSE OF "BACK BUTTON MESSING WITH LABELS":
+   Previously .arch-gallery was the CSS grid container AND held
+   .viz-header as a direct child — making the header a single
+   grid cell competing with cards for column space.
+
+   New structure:
+     .arch-gallery-wrapper  ← flex column, full-width container
+       ├── .viz-header       ← full-width, NOT a grid item
+       └── .arch-gallery     ← grid of cards only
    ========================================== */
 .arch-visualizer {
     width: 100%;
@@ -93,67 +105,79 @@
     align-items: center;
 }
 
-/* FIX: Gallery is a grid, NOT flex. Separated from arch-visualizer. */
-.arch-gallery {
+/* FIX: New wrapper holds header + gallery as separate children */
+.arch-gallery-wrapper {
     width: 100%;
     max-width: var(--arch-max-width);
     padding: calc(var(--header-height) + 20px) 20px 80px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 0 auto;
+}
+
+/* FIX: Gallery is only the card grid — no header inside it */
+.arch-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(var(--arch-card-min), 1fr));
     gap: 24px;
     align-items: stretch;
+    width: 100%;
 }
 
 /* ==========================================
-   3. HEADER
-   FIX: Consistent max-width via variable.
-        Back button direction fix.
-   GOD MODE: Animated entrance, accent underline.
+   3. VIZ HEADER
+   ==========================================
+   FIX 1: Back button on LEFT — conventional back nav.
+           flex-direction: row with button as first child.
+   FIX 2: Removed broken background-image gradient border.
+           .viz-header had no background, so the "fill" layer
+           of the double-background trick showed through as the
+           #archView grid pattern — visually broken.
+   FIX 3: Single ::after line only (reliable, no bg required).
+   FIX 4: viz-title-group gets flex:1 + min-width:0 so long
+           titles don't push the button off-screen.
    ========================================== */
 .viz-header {
     display: flex;
-    justify-content: space-between;
+    flex-direction: row;
     align-items: center;
+    gap: 16px;
     width: 100%;
-    max-width: var(--arch-max-width);
-    margin-bottom: 56px;
+    margin-bottom: 40px;
     padding-bottom: 24px;
-    /* GOD MODE: Gradient border bottom */
-    border-bottom: 1px solid transparent;
-    background-image: linear-gradient(var(--bg-primary), var(--bg-primary)),
-                      linear-gradient(90deg, var(--accent-primary), var(--accent-secondary), transparent 80%);
-    background-origin: border-box;
-    background-clip: padding-box, border-box;
-    border-image-slice: 1;
     position: relative;
     animation: archHeaderReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Simpler gradient border for wider support */
+/* FIX: ::after only — no duplicate background-image technique */
 .viz-header::after {
     content: '';
     position: absolute;
-    bottom: -1px;
-    left: 0;
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(90deg,
+    bottom: 0; left: 0;
+    width: 100%; height: 1px;
+    background: linear-gradient(
+        90deg,
         var(--accent-primary) 0%,
-        var(--accent-secondary) 40%,
-        transparent 80%
+        var(--accent-secondary) 45%,
+        transparent 75%
     );
+    pointer-events: none;
 }
 
 @keyframes archHeaderReveal {
-    from { opacity: 0; transform: translateY(-12px); }
+    from { opacity: 0; transform: translateY(-14px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* FIX: flex:1 + min-width:0 prevents long titles from overflowing */
 .viz-title-group {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1;
+    min-width: 0;
 }
 
 .viz-title {
@@ -162,15 +186,22 @@
     color: var(--text-primary);
     letter-spacing: -0.03em;
     line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .viz-subtitle {
     font-size: var(--font-size-sm);
     color: var(--text-tertiary);
     font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-/* FIX: Back button now moves LEFT on hover (←) */
+/* FIX: No margin-left — uses gap from parent.
+   Naturally first in DOM order (left position in flex row). */
 .viz-back-btn {
     display: inline-flex;
     align-items: center;
@@ -178,7 +209,7 @@
     background: var(--bg-tertiary);
     border: 1px solid var(--border-medium);
     color: var(--text-secondary);
-    padding: 9px 20px;
+    padding: 9px 18px;
     border-radius: 20px;
     font-size: var(--font-size-xs);
     font-weight: 700;
@@ -187,16 +218,16 @@
     cursor: pointer;
     transition: all var(--transition-base);
     box-shadow: var(--shadow-sm);
-    margin-left: 20px;
     flex-shrink: 0;
+    white-space: nowrap;
     -webkit-tap-highlight-color: transparent;
+    user-select: none;
 }
 
 .viz-back-btn:hover {
     background: var(--accent-primary);
     color: white;
     border-color: var(--accent-primary);
-    /* FIX: translateX(-3px) for ← back affordance */
     transform: translateX(-3px);
     box-shadow: 0 4px 16px rgba(var(--accent-primary-rgb), 0.35);
 }
@@ -206,13 +237,13 @@
 .viz-back-btn:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
+    border-radius: 20px;
 }
 
 /* ==========================================
    4. GALLERY CARDS
-   FIX: accent colors use --accent-primary-rgb.
-        Hardcoded #fff → var(--bg-secondary).
-   GOD MODE: Richer corner bracket, category badge.
+   FIX: transition now includes `background`
+   so dark-mode hover doesn't snap the bg color.
    ========================================== */
 .arch-card {
     background: var(--bg-secondary);
@@ -220,9 +251,12 @@
     border-radius: var(--radius-xl);
     padding: 26px;
     cursor: pointer;
-    transition: transform 0.28s cubic-bezier(0.25, 1, 0.5, 1),
-                box-shadow 0.28s ease,
-                border-color 0.2s ease;
+    /* FIX: background added to transition */
+    transition:
+        transform 0.28s cubic-bezier(0.25, 1, 0.5, 1),
+        box-shadow 0.28s ease,
+        border-color 0.2s ease,
+        background 0.2s ease;
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
@@ -233,7 +267,6 @@
     outline: none;
 }
 
-/* GOD MODE: Top accent bar (scaleX on hover) */
 .arch-card::before {
     content: '';
     position: absolute;
@@ -242,33 +275,33 @@
     background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
     transform: scaleX(0);
     transform-origin: left;
-    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    pointer-events: none;
 }
 
-/* GOD MODE: Corner bracket - top right */
 .arch-card::after {
     content: '';
     position: absolute;
-    top: 12px; right: 12px;
-    width: 18px; height: 18px;
-    border-top: 2px solid rgba(var(--accent-primary-rgb), 0.4);
-    border-right: 2px solid rgba(var(--accent-primary-rgb), 0.4);
-    border-top-right-radius: 6px;
+    top: 14px; right: 14px;
+    width: 16px; height: 16px;
+    border-top: 2px solid rgba(var(--accent-primary-rgb), 0.45);
+    border-right: 2px solid rgba(var(--accent-primary-rgb), 0.45);
+    border-top-right-radius: 5px;
     opacity: 0;
-    transition: opacity 0.25s ease, transform 0.25s ease;
-    transform: scale(0.7) translate(2px, -2px);
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    transform: scale(0.6) translate(3px, -3px);
+    pointer-events: none;
 }
 
 .arch-card:hover {
     transform: translateY(-6px);
     border-color: rgba(var(--accent-primary-rgb), 0.35);
-    /* FIX: var(--bg-secondary) not #fff */
     background: var(--bg-secondary);
     box-shadow:
         0 14px 36px rgba(var(--accent-primary-rgb), 0.14),
         0 4px 8px rgba(0,0,0,0.05),
-        0 0 0 1px rgba(var(--accent-primary-rgb), 0.12);
+        0 0 0 1px rgba(var(--accent-primary-rgb), 0.1);
 }
 
 .arch-card:hover::before { transform: scaleX(1); }
@@ -282,13 +315,12 @@
 
 .arch-card:active { transform: translateY(-2px); }
 
-/* GOD MODE: Subtle inner shimmer on card */
 .arch-card-inner-glow {
     position: absolute;
     inset: 0;
     background: radial-gradient(
-        ellipse 60% 40% at 50% 0%,
-        rgba(var(--accent-primary-rgb), 0.04),
+        ellipse 70% 45% at 50% 0%,
+        rgba(var(--accent-primary-rgb), 0.045),
         transparent 70%
     );
     pointer-events: none;
@@ -306,7 +338,6 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--accent-primary);
-    /* FIX: rgba with variable */
     background: rgba(var(--accent-primary-rgb), 0.08);
     padding: 4px 10px;
     border-radius: 20px;
@@ -340,7 +371,6 @@
     text-overflow: ellipsis;
 }
 
-/* GOD MODE: Card step count badge */
 .arch-card-meta {
     display: flex;
     align-items: center;
@@ -357,14 +387,12 @@
     width: 6px; height: 6px;
     border-radius: 50%;
     background: var(--accent-success);
-    box-shadow: 0 0 6px var(--accent-success);
+    box-shadow: 0 0 6px rgba(var(--accent-success-rgb), 0.7);
+    flex-shrink: 0;
 }
 
 /* ==========================================
    5. FLOW CONTAINER + SPINE
-   FIX: Spine animation uses transform on a
-        ::before pseudo element (GPU-accelerated)
-        instead of background-position (not GPU).
    ========================================== */
 .flow-container {
     display: flex;
@@ -376,28 +404,20 @@
     position: relative;
 }
 
-/* FIX: Spine is now a positioned child element (use JS or a .flow-spine div)
-   so we can animate with transform instead of background-position.
-   The ::before fallback below is kept but uses opacity animation only
-   to avoid the background-position jank. */
 .flow-container::before {
     content: '';
     position: absolute;
-    top: 0;
-    bottom: 0;
+    top: 0; bottom: 0;
     left: 50%;
-    /* GOD MODE: Use margin for centering instead of transform
-       (avoids sub-pixel blur on some browsers) */
     margin-left: calc(var(--spine-width) / -2);
     width: var(--spine-width);
     background: linear-gradient(to bottom,
         transparent 0%,
         var(--accent-primary) 15%,
-        var(--accent-secondary) 50%,
+        var(--accent-secondary) 55%,
         var(--accent-primary) 85%,
         transparent 100%
     );
-    /* FIX: Animate opacity only — GPU composited, no paint */
     animation: spinePulse 3s ease-in-out infinite;
     opacity: 0.25;
     z-index: 0;
@@ -409,49 +429,41 @@
     50%       { opacity: 0.55; }
 }
 
-/* GOD MODE: Travelling dot on spine */
 .flow-spine-dot {
     position: absolute;
     left: 50%;
     top: 0;
-    width: 6px;
-    height: 6px;
+    width: 6px; height: 6px;
     margin-left: -3px;
     border-radius: 50%;
     background: var(--accent-primary);
     box-shadow: 0 0 10px var(--accent-primary), 0 0 20px rgba(var(--accent-primary-rgb), 0.4);
-    animation: spineDotTravel 3s ease-in-out infinite;
+    animation: spineDotTravel 3.2s ease-in-out infinite;
     z-index: 3;
     pointer-events: none;
 }
 
 @keyframes spineDotTravel {
-    0%   { top: 5%;  opacity: 0; }
-    10%  { opacity: 1; }
-    90%  { opacity: 1; }
-    100% { top: 95%; opacity: 0; }
+    0%   { top: 4%;  opacity: 0; }
+    8%   { opacity: 1; }
+    92%  { opacity: 1; }
+    100% { top: 96%; opacity: 0; }
 }
 
 /* ==========================================
    6. FLOW STEPS
-   FIX: Stagger extended to 12 steps.
-        nodeReveal uses only opacity+translateY
-        (removed filter:blur — performance fix).
    ========================================== */
 .flow-step {
     width: 100%;
     display: flex;
     justify-content: center;
     position: relative;
-    /* FIX: margin uses CSS variable for connector sync */
     margin-bottom: var(--connector-gap);
-
     opacity: 0;
     animation: nodeReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     animation-delay: calc(var(--step-index, 0) * var(--stagger-base, 80ms));
 }
 
-/* FIX: nth-child fallbacks extended to 12 */
 .flow-step:nth-child(1)  { animation-delay: 0.08s; }
 .flow-step:nth-child(2)  { animation-delay: 0.16s; }
 .flow-step:nth-child(3)  { animation-delay: 0.24s; }
@@ -465,18 +477,13 @@
 .flow-step:nth-child(11) { animation-delay: 0.88s; }
 .flow-step:nth-child(12) { animation-delay: 0.96s; }
 
-/* FIX: Removed filter:blur — only transform+opacity for GPU compositing */
 @keyframes nodeReveal {
-    from { opacity: 0; transform: translateY(24px); }
+    from { opacity: 0; transform: translateY(22px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ==========================================
    7. STEP BOX (BASE NODE)
-   FIX: All #ffffff → var(--bg-secondary).
-        Dot border #fff → var(--bg-secondary).
-        Connectors tied to --connector-gap var.
-   GOD MODE: Richer shadow stack, draw-in connector.
    ========================================== */
 .step-box {
     width: 100%;
@@ -487,42 +494,32 @@
     align-items: center;
     text-align: center;
     padding: var(--node-padding);
-
-    /* FIX: CSS variable, not hardcoded #ffffff */
     background: var(--bg-secondary);
     border: 1px solid var(--border-light);
     border-radius: var(--node-radius);
-
     position: relative;
     z-index: 2;
-
     box-shadow:
         0 1px 2px rgba(0,0,0,0.04),
         0 4px 8px rgba(0,0,0,0.04),
         0 0 0 1px rgba(255,255,255,0.6) inset;
-
     transition:
         transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
         box-shadow 0.25s ease,
-        border-color 0.2s ease;
+        border-color 0.2s ease,
+        background 0.2s ease;
 }
 
-/* GOD MODE: Subtle top-edge highlight (light mode) */
 .step-box::after {
     content: '';
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(
-        170deg,
-        rgba(255,255,255,0.55) 0%,
-        transparent 50%
-    );
+    background: linear-gradient(170deg, rgba(255,255,255,0.5) 0%, transparent 45%);
     pointer-events: none;
     z-index: 1;
 }
 
-/* HOVER */
 .step-box:hover {
     transform: translateY(-5px) scale(1.015);
     border-color: rgba(var(--accent-primary-rgb), 0.4);
@@ -530,21 +527,16 @@
         0 0 0 1px rgba(var(--accent-primary-rgb), 0.2),
         0 16px 40px rgba(var(--accent-primary-rgb), 0.18),
         0 4px 8px rgba(0,0,0,0.06);
-    /* FIX: var(--bg-secondary) not #fff */
     background: var(--bg-secondary);
     z-index: 10;
 }
 
-/* STATUS DOT (top center) */
 .step-box::before {
     content: '';
     position: absolute;
-    top: -10px;
-    left: 50%;
+    top: -10px; left: 50%;
     transform: translateX(-50%);
-    width: 10px;
-    height: 10px;
-    /* FIX: var(--bg-secondary) instead of #fff */
+    width: 10px; height: 10px;
     background: var(--border-medium);
     border-radius: 50%;
     border: 2px solid var(--bg-secondary);
@@ -556,19 +548,19 @@
 .step-box:hover::before {
     background: var(--accent-success);
     border-color: var(--bg-secondary);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), 0 0 12px var(--accent-success);
-    transform: translateX(-50%) scale(1.2);
+    box-shadow:
+        0 0 0 3px rgba(var(--accent-success-rgb), 0.2),
+        0 0 12px rgba(var(--accent-success-rgb), 0.7);
+    transform: translateX(-50%) scale(1.25);
 }
 
 /* ==========================================
    CONNECTORS
-   FIX: All connector values use CSS variables.
-        --connector-gap drives both the step
-        margin-bottom AND the connector sizing.
-   GOD MODE: Draw-in animation via scaleY.
+   FIX: Removed `animation-delay: inherit` —
+   pseudo-elements cannot inherit animation-delay
+   from class-applied rules on the parent element.
+   Connectors now use a simple fade-in.
    ========================================== */
-
-/* Vertical line */
 .flow-step:not(:last-child)::after {
     content: '';
     position: absolute;
@@ -577,15 +569,14 @@
     margin-left: calc(var(--connector-width) / -2);
     width: var(--connector-width);
     height: var(--connector-gap);
-    background: linear-gradient(to bottom,
+    background: linear-gradient(
+        to bottom,
         var(--connector-color),
         rgba(var(--accent-primary-rgb), 0.5)
     );
     z-index: 1;
     transform-origin: top center;
-    /* GOD MODE: Draw-in from top */
-    animation: connectorDraw 0.4s ease forwards;
-    animation-delay: inherit; /* Inherits step's stagger delay */
+    animation: connectorDraw 0.45s cubic-bezier(0.16, 1, 0.3, 1) both 0.1s;
 }
 
 @keyframes connectorDraw {
@@ -593,11 +584,9 @@
     to   { transform: scaleY(1); opacity: 1; }
 }
 
-/* Arrowhead */
 .flow-step:not(:last-child)::before {
     content: '';
     position: absolute;
-    /* FIX: bottom positioned relative to connector-gap */
     bottom: calc(var(--connector-gap) * -1 + (var(--connector-gap) / 2) - 4px);
     left: 50%;
     transform: translateX(-50%);
@@ -609,60 +598,50 @@
 
 /* ==========================================
    8. STEP TYPES
-   FIX: All hardcoded bg colors → CSS variables.
-   GOD MODE: Richer gradients, type-specific accents.
    ========================================== */
 
 /* START: Pill — Green */
 .step-type-start .step-box {
     border-radius: 60px;
     border: 2px solid var(--accent-success);
-    background: linear-gradient(
-        135deg,
-        var(--bg-secondary) 0%,
-        rgba(16, 185, 129, 0.07) 100%
-    );
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-success-rgb), 0.07));
     box-shadow:
-        0 0 0 4px rgba(16, 185, 129, 0.08),
-        0 4px 12px rgba(16, 185, 129, 0.1);
+        0 0 0 4px rgba(var(--accent-success-rgb), 0.08),
+        0 4px 12px rgba(var(--accent-success-rgb), 0.1);
 }
-
 .step-type-start .step-box:hover {
     box-shadow:
-        0 0 0 4px rgba(16, 185, 129, 0.15),
-        0 16px 40px rgba(16, 185, 129, 0.2);
+        0 0 0 4px rgba(var(--accent-success-rgb), 0.15),
+        0 16px 40px rgba(var(--accent-success-rgb), 0.2);
     border-color: var(--accent-success);
 }
-
 .step-type-start .step-box::before {
     background: var(--accent-success);
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+    box-shadow: 0 0 12px rgba(var(--accent-success-rgb), 0.7);
 }
+
+/* FIX: step-index hidden on pill nodes (index badge at sharp corners looks wrong) */
+.step-type-start .step-index,
+.step-type-end .step-index { display: none; }
 
 /* END: Pill — Red */
 .step-type-end .step-box {
     border-radius: 60px;
     border: 2px solid var(--accent-danger);
-    background: linear-gradient(
-        135deg,
-        var(--bg-secondary) 0%,
-        rgba(239, 68, 68, 0.07) 100%
-    );
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-danger-rgb), 0.07));
     box-shadow:
-        0 0 0 4px rgba(239, 68, 68, 0.08),
-        0 4px 12px rgba(239, 68, 68, 0.1);
+        0 0 0 4px rgba(var(--accent-danger-rgb), 0.08),
+        0 4px 12px rgba(var(--accent-danger-rgb), 0.1);
 }
-
 .step-type-end .step-box:hover {
     border-color: var(--accent-danger);
     box-shadow:
-        0 0 0 4px rgba(239, 68, 68, 0.15),
-        0 16px 40px rgba(239, 68, 68, 0.2);
+        0 0 0 4px rgba(var(--accent-danger-rgb), 0.15),
+        0 16px 40px rgba(var(--accent-danger-rgb), 0.2);
 }
-
 .step-type-end .step-box::before {
     background: var(--accent-danger);
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+    box-shadow: 0 0 12px rgba(var(--accent-danger-rgb), 0.7);
 }
 
 /* HIGHLIGHT: Left accent bar — Cyan */
@@ -670,16 +649,9 @@
     border: 1px solid rgba(var(--accent-primary-rgb), 0.3);
     border-left: 4px solid var(--accent-primary);
     border-radius: var(--node-radius);
-    background: linear-gradient(
-        135deg,
-        var(--bg-secondary) 0%,
-        rgba(var(--accent-primary-rgb), 0.05) 100%
-    );
-    box-shadow:
-        -4px 0 12px rgba(var(--accent-primary-rgb), 0.12),
-        0 4px 8px rgba(0,0,0,0.04);
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-primary-rgb), 0.05));
+    box-shadow: -4px 0 12px rgba(var(--accent-primary-rgb), 0.12), 0 4px 8px rgba(0,0,0,0.04);
 }
-
 .step-type-highlight .step-box:hover {
     box-shadow:
         -4px 0 20px rgba(var(--accent-primary-rgb), 0.25),
@@ -687,81 +659,86 @@
         0 16px 40px rgba(var(--accent-primary-rgb), 0.15);
 }
 
-/* CONTAINER: Dashed group box */
+/* CONTAINER: Dashed */
 .step-type-container .step-box {
-    /* FIX: var(--bg-tertiary) not hardcoded #f8fafc */
     background: var(--bg-tertiary);
     border: 1.5px dashed var(--border-medium);
     box-shadow: none;
 }
-
 .step-type-container .step-box:hover {
     border-color: rgba(var(--accent-primary-rgb), 0.4);
     border-style: dashed;
 }
 
 /* ==========================================
-   NEW: DECISION / DIAMOND NODE
-   Rotated square with inner content.
-   GOD MODE: Rotating border gradient on hover.
+   DECISION / DIAMOND NODE
+   ==========================================
+   FIX: clip-path clips box-shadow entirely on
+   the clipped element. Using filter:drop-shadow()
+   instead — operates on the composited pixel
+   layer after clipping, so it's always visible.
+   
+   FIX: Decision step has margin-bottom + 20px extra.
+   The connector pseudo-elements must match that
+   extra space or they'll be 20px short of the next node.
    ========================================== */
 .step-type-decision {
-    /* Needs more vertical space for diamond */
     margin-bottom: calc(var(--connector-gap) + 20px);
 }
 
+/* FIX: Override connector sizing for decision's extended gap */
+.step-type-decision.flow-step:not(:last-child)::after {
+    height: calc(var(--connector-gap) + 20px);
+    bottom: calc((var(--connector-gap) + 20px) * -1);
+}
+.step-type-decision.flow-step:not(:last-child)::before {
+    bottom: calc((var(--connector-gap) + 20px) * -1 + (var(--connector-gap) + 20px) / 2 - 4px);
+}
+
 .step-type-decision .step-box {
-    position: relative;
     width: 200px;
     height: 200px;
     max-width: 200px;
     min-height: unset;
     padding: 0;
-    /* Diamond via clip-path — no transform needed, content stays readable */
     clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
     border-radius: 0;
-    background: linear-gradient(
-        135deg,
-        var(--bg-secondary),
-        rgba(var(--accent-warning-rgb, 245, 158, 11), 0.08)
-    );
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-warning-rgb), 0.09));
     border: none;
-    /* GOD MODE: Diamond glow border via outline + box-shadow */
-    box-shadow:
-        0 0 0 2px rgba(var(--accent-warning-rgb, 245,158,11), 0.35),
-        0 8px 24px rgba(var(--accent-warning-rgb, 245,158,11), 0.15);
+    /* FIX: drop-shadow works with clip-path; box-shadow does not */
+    filter:
+        drop-shadow(0 0 8px rgba(var(--accent-warning-rgb), 0.4))
+        drop-shadow(0 6px 16px rgba(var(--accent-warning-rgb), 0.15));
+    box-shadow: none;
     justify-content: center;
     display: flex;
     align-items: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease, filter 0.3s ease;
 }
 
 .step-type-decision .step-box::before { display: none; }
 .step-type-decision .step-box::after  { display: none; }
 
 .step-type-decision .step-box:hover {
-    transform: translateY(-4px) rotate(2deg) scale(1.04);
-    box-shadow:
-        0 0 0 3px rgba(var(--accent-warning-rgb, 245,158,11), 0.5),
-        0 16px 40px rgba(var(--accent-warning-rgb, 245,158,11), 0.25);
+    transform: translateY(-4px) scale(1.05);
+    filter:
+        drop-shadow(0 0 14px rgba(var(--accent-warning-rgb), 0.6))
+        drop-shadow(0 12px 30px rgba(var(--accent-warning-rgb), 0.25));
 }
 
 .step-type-decision .step-label {
-    /* GOD MODE: Counter-rotate label so it's readable inside diamond */
-    transform: rotate(0deg);
     font-size: var(--font-size-xs);
-    padding: 0 24px;
+    padding: 0 28px;
     line-height: 1.3;
 }
 
-/* Decision branches label */
 .decision-branch-labels {
     display: flex;
     justify-content: space-between;
     width: 100%;
     max-width: var(--node-max-width);
-    padding: 0 20px;
-    margin-top: -32px;
+    padding: 0 24px;
+    margin-top: -28px;
     position: relative;
     z-index: 3;
     pointer-events: none;
@@ -776,23 +753,23 @@
     padding: 3px 10px;
     border-radius: 20px;
 }
-
 .decision-label-yes {
     color: var(--accent-success);
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.25);
+    background: rgba(var(--accent-success-rgb), 0.1);
+    border: 1px solid rgba(var(--accent-success-rgb), 0.25);
 }
-
 .decision-label-no {
     color: var(--accent-danger);
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.25);
+    background: rgba(var(--accent-danger-rgb), 0.1);
+    border: 1px solid rgba(var(--accent-danger-rgb), 0.25);
 }
 
 /* ==========================================
-   NEW: PARALLEL LANE (Split/Join)
-   Renders two columns of steps side by side.
-   GOD MODE: Shared header + lane borders.
+   PARALLEL LANES
+   FIX: parallel-header had display:inline-block
+   then display:flex — second overrides first.
+   Removed dead inline-block declaration.
+   FIX: flow-step-parallel had no stagger delays.
    ========================================== */
 .flow-step-parallel {
     width: 100%;
@@ -803,8 +780,19 @@
     animation: nodeReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* FIX: Stagger parallel blocks by position */
+.flow-step-parallel:nth-child(1) { animation-delay: 0.08s; }
+.flow-step-parallel:nth-child(2) { animation-delay: 0.16s; }
+.flow-step-parallel:nth-child(3) { animation-delay: 0.24s; }
+.flow-step-parallel:nth-child(4) { animation-delay: 0.32s; }
+.flow-step-parallel:nth-child(5) { animation-delay: 0.40s; }
+.flow-step-parallel:nth-child(6) { animation-delay: 0.48s; }
+
+/* FIX: display:flex only — removed dead display:inline-block */
 .parallel-header {
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     font-size: var(--font-size-xs);
     font-weight: 700;
     text-transform: uppercase;
@@ -815,13 +803,9 @@
     background: var(--bg-tertiary);
     border: 1px solid var(--border-light);
     border-radius: 20px;
-    display: inline-block;
-    align-self: center;
     width: fit-content;
     margin-left: auto;
     margin-right: auto;
-    display: flex;
-    justify-content: center;
 }
 
 .parallel-lanes {
@@ -831,20 +815,13 @@
     position: relative;
 }
 
-/* Center divider line between lanes */
 .parallel-lanes::before {
     content: '';
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 50%;
+    top: 0; bottom: 0; left: 50%;
     width: 1px;
     background: linear-gradient(
-        to bottom,
-        transparent,
-        var(--border-medium) 20%,
-        var(--border-medium) 80%,
-        transparent
+        to bottom, transparent, var(--border-medium) 20%, var(--border-medium) 80%, transparent
     );
     pointer-events: none;
     z-index: 0;
@@ -853,7 +830,7 @@
 .parallel-lane {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     padding: 20px;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-light);
@@ -868,12 +845,11 @@
     text-transform: uppercase;
     letter-spacing: 0.07em;
     color: var(--accent-primary);
-    margin-bottom: 4px;
     padding-bottom: 10px;
     border-bottom: 1px solid rgba(var(--accent-primary-rgb), 0.15);
+    margin-bottom: 2px;
 }
 
-/* Parallel lane step (compact) */
 .parallel-step {
     background: var(--bg-secondary);
     border: 1px solid var(--border-light);
@@ -883,9 +859,7 @@
     color: var(--text-secondary);
     line-height: 1.5;
     transition: all var(--transition-fast);
-    position: relative;
 }
-
 .parallel-step:hover {
     border-color: rgba(var(--accent-primary-rgb), 0.3);
     transform: translateX(3px);
@@ -900,85 +874,93 @@
 }
 
 /* ==========================================
-   NEW: ANNOTATION / NOTE NODE
-   Side-note style — off to the right with
-   a connecting dashed line.
+   ANNOTATION / NOTE NODE
+   FIX: The annotation .step-box has transform:translateX(20px).
+   The ::before connector used `right: 100%; width: 20px` — this
+   left a 20px gap because right:100% is relative to the flex item
+   boundary, not the translated box position.
+   Fix: extend width to 40px and adjust right so it bridges both
+   the container edge AND the 20px translateX gap.
    ========================================== */
 .step-type-annotation {
     justify-content: flex-end;
-    padding-right: 0;
 }
 
 .step-type-annotation .step-box {
     max-width: 340px;
-    background: linear-gradient(
-        135deg,
-        rgba(var(--accent-warning-rgb, 245,158,11), 0.06),
-        var(--bg-secondary)
-    );
-    border: 1px dashed rgba(245, 158, 11, 0.4);
+    background: linear-gradient(135deg, rgba(var(--accent-warning-rgb), 0.06), var(--bg-secondary));
+    border: 1px dashed rgba(var(--accent-warning-rgb), 0.4);
     border-left: 3px solid var(--accent-warning);
     border-radius: var(--radius-md);
-    margin-right: 0;
     margin-left: auto;
-    /* GOD MODE: Offset to the right */
+    margin-right: 0;
     transform: translateX(20px);
     box-shadow: none;
+    transition:
+        transform 0.25s ease,
+        border-color 0.2s ease,
+        box-shadow 0.25s ease,
+        background 0.2s ease;
 }
 
 .step-type-annotation .step-box:hover {
     transform: translateX(16px) translateY(-3px);
     border-color: var(--accent-warning);
-    box-shadow: 0 8px 24px rgba(245,158,11,0.15);
+    border-left-color: var(--accent-warning);
+    box-shadow: 0 8px 24px rgba(var(--accent-warning-rgb), 0.15);
 }
 
-/* Dashed connection line from annotation back to spine */
+/* FIX: right offset + extended width bridges the translateX gap */
 .step-type-annotation::before {
     content: '';
     position: absolute;
     top: 50%;
-    right: 100%;
-    width: 20px;
-    height: 1px;
-    border-top: 1.5px dashed rgba(245,158,11,0.4);
+    right: calc(100% - 20px);
+    width: 40px;
+    height: 0;
+    border-top: 1.5px dashed rgba(var(--accent-warning-rgb), 0.45);
     transform: translateY(-50%);
     pointer-events: none;
+    z-index: 1;
 }
 
 /* ==========================================
-   NEW: LOOP-BACK INDICATOR
-   A visual arc suggesting a feedback/retry loop.
-   Applied as a class modifier on a step.
+   LOOP-BACK INDICATOR
+   FIX: loopSpin on ::after required display:inline-block.
+        CSS transform has no effect on inline elements.
+   FIX: loopDash was using stroke-dashoffset — SVG-only property.
+        Replaced with border-color opacity pulse animation.
    ========================================== */
 .step-has-loop::after {
-    /* Override the connector line for loop steps */
     content: '';
     position: absolute;
-    /* Arc on the LEFT side */
-    left: calc(50% - var(--node-max-width) / 2 - 32px);
+    left: calc(50% - var(--node-max-width) / 2 - 36px);
     top: 50%;
-    width: 32px;
-    height: calc(var(--connector-gap) * 2 + 80px);
-    border: 2px dashed rgba(var(--accent-secondary-rgb), 0.45);
+    width: 36px;
+    height: calc(var(--connector-gap) * 2 + 84px);
+    border: 2px dashed rgba(var(--accent-secondary-rgb), 0.4);
     border-right: none;
-    border-radius: 12px 0 0 12px;
+    border-radius: 14px 0 0 14px;
     transform: translateY(-50%);
     z-index: 1;
-    /* GOD MODE: animated dash */
     background: none;
-    animation: loopDash 1.5s linear infinite;
+    /* FIX: border opacity pulse (border-color animation, no SVG props) */
+    animation: loopBorderPulse 2s ease-in-out infinite;
 }
 
-@keyframes loopDash {
-    to { stroke-dashoffset: -20; }
+@keyframes loopBorderPulse {
+    0%, 100% { border-color: rgba(var(--accent-secondary-rgb), 0.28); }
+    50%       { border-color: rgba(var(--accent-secondary-rgb), 0.65); }
 }
 
 .step-has-loop .step-label::after {
     content: '↺';
+    /* FIX: inline-block required — transform:rotate ignored on inline */
+    display: inline-block;
     margin-left: 6px;
-    font-size: 0.9em;
+    font-size: 0.88em;
     color: var(--accent-secondary);
-    animation: loopSpin 2s linear infinite;
+    animation: loopSpin 2.5s linear infinite;
 }
 
 @keyframes loopSpin {
@@ -1016,11 +998,9 @@
     text-align: left;
 }
 
-/* GOD MODE: Step index badge */
 .step-index {
     position: absolute;
-    top: 14px;
-    right: 16px;
+    top: 14px; right: 16px;
     font-size: var(--font-size-xs);
     font-weight: 700;
     color: var(--text-muted);
@@ -1031,8 +1011,8 @@
     letter-spacing: 0.04em;
     z-index: 12;
     transition: all var(--transition-fast);
+    pointer-events: none;
 }
-
 .step-box:hover .step-index {
     background: rgba(var(--accent-primary-rgb), 0.1);
     border-color: rgba(var(--accent-primary-rgb), 0.25);
@@ -1040,24 +1020,15 @@
 }
 
 /* ==========================================
-   10. NESTED CHILDREN (Branch)
-   FIX: left:-41px magic number replaced with
-        CSS variable. Branch lines hidden on mobile.
+   10. NESTED CHILDREN
    ========================================== */
-:root {
-    --branch-indent: 40px;
-    --branch-line-offset: calc(var(--branch-indent) + 1px);
-}
-
 .step-children {
     display: flex;
     flex-direction: column;
     gap: 16px;
     margin-top: 16px;
     margin-left: var(--branch-indent);
-    margin-right: 0;
     padding: 20px;
-    /* FIX: var(--bg-tertiary) not #f1f5f9 */
     background: var(--bg-tertiary);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-light);
@@ -1065,12 +1036,10 @@
     position: relative;
 }
 
-/* GOD MODE: Gradient left border on children group */
 .step-children::before {
     content: '';
     position: absolute;
     top: 50%;
-    /* FIX: Uses --branch-line-offset, not hardcoded -41px */
     left: calc(var(--branch-line-offset) * -1);
     width: var(--branch-indent);
     height: 2px;
@@ -1079,14 +1048,12 @@
     pointer-events: none;
 }
 
-/* Branch corner dot */
 .step-children::after {
     content: '';
     position: absolute;
     top: 50%;
     left: calc(var(--branch-line-offset) * -1);
-    width: 8px;
-    height: 8px;
+    width: 8px; height: 8px;
     border-top: 2px solid var(--border-medium);
     border-left: 2px solid var(--border-medium);
     transform: translateY(-50%) rotate(-45deg);
@@ -1095,49 +1062,42 @@
 
 /* ==========================================
    11. MOBILE
-   FIX: archView z-index on mobile uses
-        CSS variable to avoid modal conflict.
    ========================================== */
 @media (max-width: 768px) {
-    /* FIX: 150 = between overlay(100) and modal(200) */
     #archView { z-index: 150; }
+
+    .arch-gallery-wrapper { padding-left: 16px; padding-right: 16px; }
 
     .flow-container { padding: 12px 0 40px; }
 
     .viz-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 16px;
-        margin-bottom: 32px;
+        gap: 12px;
+        margin-bottom: 28px;
     }
 
-    .viz-back-btn { margin-left: 0; }
+    .viz-back-btn { order: -1; }
+    .viz-title { white-space: normal; }
+    .viz-subtitle { white-space: normal; }
 
-    .step-box {
-        max-width: 100%;
-        padding: 18px 20px;
-    }
+    .step-box { max-width: 100%; padding: 18px 20px; }
 
     .step-type-decision .step-box {
-        width: 160px;
-        height: 160px;
-        max-width: 160px;
+        width: 160px; height: 160px; max-width: 160px;
+    }
+    /* Decision connectors on mobile */
+    .step-type-decision.flow-step:not(:last-child)::after {
+        height: calc(var(--connector-gap) + 20px);
+        bottom: calc((var(--connector-gap) + 20px) * -1);
     }
 
-    .parallel-lanes {
-        grid-template-columns: 1fr;
-        gap: 16px;
-    }
-
+    .parallel-lanes { grid-template-columns: 1fr; gap: 14px; }
     .parallel-lanes::before { display: none; }
 
-    .step-type-annotation .step-box {
-        transform: translateX(0);
-        max-width: 100%;
-    }
+    .step-type-annotation .step-box { transform: translateX(0); max-width: 100%; }
     .step-type-annotation::before { display: none; }
 
-    /* Branch lines hidden on mobile */
     .step-children {
         margin-left: 0;
         background: transparent;
@@ -1146,24 +1106,19 @@
     .step-children::before,
     .step-children::after { display: none; }
 
+    .step-has-loop::after { display: none; }
     .flow-spine-dot { display: none; }
 }
 
-/* Small mobile */
 @media (max-width: 480px) {
-    .arch-gallery {
-        grid-template-columns: 1fr;
-        padding-left: 16px;
-        padding-right: 16px;
-    }
+    .arch-gallery { grid-template-columns: 1fr; }
     .arch-visualizer { padding-left: 16px; padding-right: 16px; }
 }
 
 /* ==========================================
    12. DARK MODE
-   FIX: Uses [data-theme="dark"] to match the
-        main CSS toggle system — NOT prefers-color-scheme.
-        All hardcoded colors replaced with vars.
+   FIX: [data-theme="dark"] matches main CSS
+        toggle — NOT prefers-color-scheme.
    ========================================== */
 [data-theme="dark"] #archView {
     background-image:
@@ -1177,24 +1132,19 @@
 [data-theme="dark"] .flow-container::before {
     opacity: 0.45;
     background: linear-gradient(to bottom,
-        transparent 0%,
-        var(--accent-primary) 30%,
-        var(--accent-secondary) 60%,
-        transparent 100%
+        transparent 0%, var(--accent-primary) 30%, var(--accent-secondary) 60%, transparent 100%
     );
 }
 
-/* FIX: Dark step boxes use CSS variables (no hardcoded colors) */
 [data-theme="dark"] .step-box {
     background: var(--bg-secondary);
     border-color: var(--border-medium);
     box-shadow:
-        0 1px 2px rgba(0,0,0,0.3),
+        0 1px 2px rgba(0,0,0,0.35),
         0 4px 8px rgba(0,0,0,0.25),
         0 0 0 1px rgba(255,255,255,0.03) inset;
 }
 
-/* Remove light-mode sheen in dark mode */
 [data-theme="dark"] .step-box::after { display: none; }
 
 [data-theme="dark"] .step-box:hover {
@@ -1205,52 +1155,47 @@
         0 4px 8px rgba(0,0,0,0.3);
 }
 
-/* FIX: Dark mode dot border matches dark bg */
 [data-theme="dark"] .step-box::before {
     border-color: var(--bg-secondary);
     background: var(--border-dark);
 }
 
-/* Dark step types */
 [data-theme="dark"] .step-type-start .step-box {
-    background: linear-gradient(135deg, var(--bg-secondary), rgba(16, 185, 129, 0.14));
-    border-color: rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-success-rgb), 0.14));
+    border-color: rgba(var(--accent-success-rgb), 0.4);
 }
-
 [data-theme="dark"] .step-type-end .step-box {
-    background: linear-gradient(135deg, var(--bg-secondary), rgba(239, 68, 68, 0.14));
-    border-color: rgba(239, 68, 68, 0.4);
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-danger-rgb), 0.14));
+    border-color: rgba(var(--accent-danger-rgb), 0.4);
 }
-
 [data-theme="dark"] .step-type-highlight .step-box {
     background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-primary-rgb), 0.12));
     border-color: rgba(var(--accent-primary-rgb), 0.35);
 }
-
 [data-theme="dark"] .step-type-container .step-box {
     background: rgba(15, 23, 42, 0.85);
     border-color: var(--border-medium);
 }
-
 [data-theme="dark"] .step-type-decision .step-box {
-    background: linear-gradient(135deg, var(--bg-secondary), rgba(245,158,11,0.12));
-    box-shadow:
-        0 0 0 2px rgba(245,158,11,0.3),
-        0 8px 24px rgba(245,158,11,0.12);
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-warning-rgb), 0.13));
+    filter:
+        drop-shadow(0 0 8px rgba(var(--accent-warning-rgb), 0.5))
+        drop-shadow(0 6px 16px rgba(var(--accent-warning-rgb), 0.2));
+}
+[data-theme="dark"] .step-type-annotation .step-box {
+    background: linear-gradient(135deg, rgba(var(--accent-warning-rgb), 0.09), var(--bg-secondary));
+    border-color: rgba(var(--accent-warning-rgb), 0.3);
 }
 
-/* FIX: Dark step-children uses variables */
 [data-theme="dark"] .step-children {
     background: rgba(15, 23, 42, 0.7);
     border-color: var(--border-medium);
     box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
 }
 
-/* Dark arch cards */
 [data-theme="dark"] .arch-card {
     background: var(--bg-secondary);
 }
-
 [data-theme="dark"] .arch-card:hover {
     background: var(--bg-tertiary);
     border-color: rgba(var(--accent-primary-rgb), 0.3);
@@ -1260,10 +1205,14 @@
     background: rgba(15, 23, 42, 0.6);
     border-color: var(--border-medium);
 }
-
 [data-theme="dark"] .parallel-step {
     background: var(--bg-secondary);
     border-color: var(--border-medium);
+}
+[data-theme="dark"] .parallel-lanes::before {
+    background: linear-gradient(
+        to bottom, transparent, var(--border-dark) 20%, var(--border-dark) 80%, transparent
+    );
 }
 
 [data-theme="dark"] .step-index {
@@ -1271,7 +1220,8 @@
     border-color: var(--border-medium);
 }
 
-[data-theme="dark"] .step-type-annotation .step-box {
-    background: linear-gradient(135deg, rgba(245,158,11,0.08), var(--bg-secondary));
-    border-color: rgba(245,158,11,0.3);
+[data-theme="dark"] .viz-header::after { opacity: 0.65; }
+
+[data-theme="dark"] .arch-card-meta-dot {
+    box-shadow: 0 0 8px rgba(var(--accent-success-rgb), 0.8);
 }
