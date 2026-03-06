@@ -371,6 +371,46 @@ class App {
                 this.handleAddTerm(new FormData(e.target));
             });
         }
+        
+        // KNOWLEDGE PATHS NAVIGATION
+        const navPaths = document.getElementById('navPaths');
+        if (navPaths) {
+            navPaths.onclick = () => {
+                // 1. Hide Graph
+                const content = document.getElementById('content');
+                if(content) content.style.display = 'none';
+                
+                // 2. Show Path View
+                const archView = document.getElementById('pathView');
+                if(archView) archView.style.display = 'block';
+                
+                // 3. Reset Visibility
+                document.getElementById('pathGallery').style.display = 'grid';
+                document.getElementById('pathViewer').innerHTML = ''; // Clear previous steps
+                
+                // 4. Render Gallery
+                if (window.KnowledgePaths) window.KnowledgePaths.renderPathGallery();
+            };
+        }
+
+
+    }
+
+    focusTerm(termName) {
+        // 1. Search for the term node by name
+        const node = this.graph.findNode((n) => n.term.name === termName || n.term.fullName === termName);
+        
+        if (node) {
+            // 2. Centre camera on node
+            // You might need to implement `this.graph.centerOn(node)` if it doesn't exist
+            // this.graph.centerOn(node.x, node.y);
+            
+            // 3. Trigger selection logic
+            this.handleNodeSelect(node.term); 
+        } else {
+            // If not found, try searching ID (fallback)
+            // (Optional: Visual feedback if not found)
+        }
     }
 
     // ==========================================
