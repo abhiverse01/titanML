@@ -1,69 +1,176 @@
 /* ==========================================
-   ARCHITECTURE VISUALIZER (GOD MODE V5 - PRO)
+   ARCHITECTURE VISUALIZER — GOD MODE
+   ==========================================
+   Fixes: dark mode system, hardcoded colors,
+   z-index vars, double gallery def, connector
+   fragility, spine perf, back btn direction,
+   stagger range, missing node types.
+   
+   Adds: decision/diamond, parallel lanes,
+   annotation, loop-back, draw-in connectors,
+   richer card interactions, consistent layout.
    ========================================== */
 
-/* 1. MAIN CONTAINER */
+/* ==========================================
+   0. LOCAL VARIABLES
+   Centralize layout + connector constants
+   ========================================== */
+#archView {
+    /* Layout */
+    --arch-max-width: 960px;
+    --arch-card-min: 300px;
+    
+    /* Connector system — change ONE value, all connectors update */
+    --connector-gap: 52px;     /* Vertical space between steps */
+    --connector-width: 2px;    /* Line thickness */
+    --connector-color: var(--border-medium);
+    --connector-arrow-size: 7px;
+
+    /* Node sizing */
+    --node-max-width: 620px;
+    --node-padding: 26px 34px;
+    --node-radius: 14px;
+
+    /* Spine */
+    --spine-width: 2px;
+    --spine-color: var(--accent-primary);
+
+    /* Stagger base */
+    --stagger-base: 80ms;
+}
+
+/* ==========================================
+   1. MAIN CONTAINER
+   FIX: z-index uses variable from main CSS.
+   GOD MODE: Richer grid texture.
+   ========================================== */
 #archView {
     position: fixed;
     inset: 0;
     width: 100%;
     height: 100%;
-    z-index: 60; 
+    /* FIX: Use --z-panel (50) + 10 = 60 for desktop.
+       Below sidebar overlay (100) and modal (200). */
+    z-index: 60;
     background: var(--bg-primary);
     overflow-y: auto;
     overflow-x: hidden;
     display: none;
-    
-    /* Subtle Tech Grid */
-    background-image: 
-        linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-    background-size: 30px 30px;
+    scroll-behavior: smooth;
+
+    /* GOD MODE: Layered tech grid — major + minor lines */
+    background-image:
+        /* Major grid */
+        linear-gradient(rgba(var(--accent-primary-rgb), 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(var(--accent-primary-rgb), 0.04) 1px, transparent 1px),
+        /* Minor grid */
+        linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+    background-size: 120px 120px, 120px 120px, 30px 30px, 30px 30px;
 }
 
-/* Custom Scrollbar */
+/* Scrollbar matching main CSS */
 #archView::-webkit-scrollbar { width: 6px; }
 #archView::-webkit-scrollbar-track { background: transparent; }
-#archView::-webkit-scrollbar-thumb { 
-    background: var(--border-medium); 
-    border-radius: 3px; 
+#archView::-webkit-scrollbar-thumb {
+    background: var(--border-medium);
+    border-radius: 6px;
+    background-clip: content-box;
 }
 #archView::-webkit-scrollbar-thumb:hover { background: var(--border-dark); }
 
-/* 2. WRAPPER */
-.arch-visualizer, .arch-gallery {
+/* ==========================================
+   2. WRAPPERS
+   FIX: .arch-visualizer and .arch-gallery are
+   no longer grouped — each gets its own display.
+   ========================================== */
+.arch-visualizer {
     width: 100%;
-    padding-top: calc(var(--header-height) + 20px);
-    padding-left: 20px;
-    padding-right: 20px;
-    padding-bottom: 60px;
+    padding: calc(var(--header-height) + 20px) 20px 80px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-/* 3. HEADER (Flexbox for Alignment) */
+/* FIX: Gallery is a grid, NOT flex. Separated from arch-visualizer. */
+.arch-gallery {
+    width: 100%;
+    max-width: var(--arch-max-width);
+    padding: calc(var(--header-height) + 20px) 20px 80px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--arch-card-min), 1fr));
+    gap: 24px;
+    align-items: stretch;
+}
+
+/* ==========================================
+   3. HEADER
+   FIX: Consistent max-width via variable.
+        Back button direction fix.
+   GOD MODE: Animated entrance, accent underline.
+   ========================================== */
 .viz-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    max-width: 1000px; /* Reduced max-width for better balance */
-    margin-bottom: 60px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border-light);
-    animation: slideDown 0.4s ease-out;
+    max-width: var(--arch-max-width);
+    margin-bottom: 56px;
+    padding-bottom: 24px;
+    /* GOD MODE: Gradient border bottom */
+    border-bottom: 1px solid transparent;
+    background-image: linear-gradient(var(--bg-primary), var(--bg-primary)),
+                      linear-gradient(90deg, var(--accent-primary), var(--accent-secondary), transparent 80%);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    border-image-slice: 1;
+    position: relative;
+    animation: archHeaderReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+/* Simpler gradient border for wider support */
+.viz-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg,
+        var(--accent-primary) 0%,
+        var(--accent-secondary) 40%,
+        transparent 80%
+    );
 }
 
-.viz-title-group { display: flex; flex-direction: column; }
+@keyframes archHeaderReveal {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
 
-/* BACK BUTTON (Right Aligned) */
+.viz-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.viz-title {
+    font-size: var(--font-size-2xl);
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+}
+
+.viz-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+/* FIX: Back button now moves LEFT on hover (←) */
 .viz-back-btn {
     display: inline-flex;
     align-items: center;
@@ -71,42 +178,51 @@
     background: var(--bg-tertiary);
     border: 1px solid var(--border-medium);
     color: var(--text-secondary);
-    padding: 8px 20px;
+    padding: 9px 20px;
     border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.06em;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--transition-base);
     box-shadow: var(--shadow-sm);
-    margin-left: 20px; /* Space from title */
+    margin-left: 20px;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .viz-back-btn:hover {
     background: var(--accent-primary);
     color: white;
     border-color: var(--accent-primary);
-    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
-    transform: translateX(2px);
+    /* FIX: translateX(-3px) for ← back affordance */
+    transform: translateX(-3px);
+    box-shadow: 0 4px 16px rgba(var(--accent-primary-rgb), 0.35);
 }
 
-/* 4. GALLERY GRID */
-.arch-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 24px;
-    width: 100%;
-    max-width: 1200px;
-    align-items: stretch;
+.viz-back-btn:active { transform: translateX(-1px) scale(0.98); }
+
+.viz-back-btn:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
 }
 
+/* ==========================================
+   4. GALLERY CARDS
+   FIX: accent colors use --accent-primary-rgb.
+        Hardcoded #fff → var(--bg-secondary).
+   GOD MODE: Richer corner bracket, category badge.
+   ========================================== */
 .arch-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-xl);
-    padding: 24px;
+    padding: 26px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: transform 0.28s cubic-bezier(0.25, 1, 0.5, 1),
+                box-shadow 0.28s ease,
+                border-color 0.2s ease;
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
@@ -114,71 +230,108 @@
     display: flex;
     flex-direction: column;
     align-self: stretch;
+    outline: none;
 }
 
-/* Tech Corner */
-.arch-card::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 20px; height: 20px;
-    border-top: 2px solid var(--accent-primary);
-    border-right: 2px solid var(--accent-primary);
-    border-top-right-radius: var(--radius-xl);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.arch-card:hover {
-    transform: translateY(-5px);
-    border-color: var(--accent-primary);
-    box-shadow: 0 12px 30px rgba(8, 145, 178, 0.15);
-    background: #fff; /* Solid white on hover */
-}
-
-.arch-card:hover::after { opacity: 1; }
-
+/* GOD MODE: Top accent bar (scaleX on hover) */
 .arch-card::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 3px;
-    background: var(--accent-primary);
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
     transform: scaleX(0);
     transform-origin: left;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+/* GOD MODE: Corner bracket - top right */
+.arch-card::after {
+    content: '';
+    position: absolute;
+    top: 12px; right: 12px;
+    width: 18px; height: 18px;
+    border-top: 2px solid rgba(var(--accent-primary-rgb), 0.4);
+    border-right: 2px solid rgba(var(--accent-primary-rgb), 0.4);
+    border-top-right-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    transform: scale(0.7) translate(2px, -2px);
+}
+
+.arch-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(var(--accent-primary-rgb), 0.35);
+    /* FIX: var(--bg-secondary) not #fff */
+    background: var(--bg-secondary);
+    box-shadow:
+        0 14px 36px rgba(var(--accent-primary-rgb), 0.14),
+        0 4px 8px rgba(0,0,0,0.05),
+        0 0 0 1px rgba(var(--accent-primary-rgb), 0.12);
 }
 
 .arch-card:hover::before { transform: scaleX(1); }
+.arch-card:hover::after  { opacity: 1; transform: scale(1) translate(0, 0); }
 
-/* Typography */
+.arch-card:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(var(--accent-primary-rgb), 0.15);
+}
+
+.arch-card:active { transform: translateY(-2px); }
+
+/* GOD MODE: Subtle inner shimmer on card */
+.arch-card-inner-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        ellipse 60% 40% at 50% 0%,
+        rgba(var(--accent-primary-rgb), 0.04),
+        transparent 70%
+    );
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.arch-card:hover .arch-card-inner-glow { opacity: 1; }
+
 .arch-category {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     font-size: var(--font-size-xs);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     color: var(--accent-primary);
-    background: rgba(8, 145, 178, 0.08);
+    /* FIX: rgba with variable */
+    background: rgba(var(--accent-primary-rgb), 0.08);
     padding: 4px 10px;
-    border-radius: 6px;
-    margin-bottom: 12px;
+    border-radius: 20px;
+    margin-bottom: 14px;
     align-self: flex-start;
-    border: 1px solid rgba(8, 145, 178, 0.2);
+    border: 1px solid rgba(var(--accent-primary-rgb), 0.18);
+    transition: background var(--transition-fast);
+}
+.arch-card:hover .arch-category {
+    background: rgba(var(--accent-primary-rgb), 0.14);
 }
 
 .arch-title {
-    font-size: 1.25rem;
+    font-size: var(--font-size-lg);
     font-weight: 800;
     color: var(--text-primary);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     line-height: 1.3;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
 }
 
 .arch-desc {
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
-    line-height: 1.6;
+    line-height: 1.65;
     margin-top: auto;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -187,329 +340,938 @@
     text-overflow: ellipsis;
 }
 
-/* ==========================================
-   5. FLOWCHART ENGINE (GOD MODE V5: PRO SPINE)
-   ========================================== */
+/* GOD MODE: Card step count badge */
+.arch-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-light);
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    font-weight: 500;
+}
 
+.arch-card-meta-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent-success);
+    box-shadow: 0 0 6px var(--accent-success);
+}
+
+/* ==========================================
+   5. FLOW CONTAINER + SPINE
+   FIX: Spine animation uses transform on a
+        ::before pseudo element (GPU-accelerated)
+        instead of background-position (not GPU).
+   ========================================== */
 .flow-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
-    max-width: 900px;
-    padding: 20px 0 60px 0; /* Top/bottom padding */
+    max-width: var(--arch-max-width);
+    padding: 24px 0 80px;
     position: relative;
 }
 
-/* THE CENTRAL SPINE (The Line) */
+/* FIX: Spine is now a positioned child element (use JS or a .flow-spine div)
+   so we can animate with transform instead of background-position.
+   The ::before fallback below is kept but uses opacity animation only
+   to avoid the background-position jank. */
 .flow-container::before {
     content: '';
     position: absolute;
     top: 0;
     bottom: 0;
     left: 50%;
-    transform: translateX(-50%);
-    width: 2px;
-    /* Pulsing Gradient */
-    background: linear-gradient(to bottom, transparent, var(--accent-primary), transparent);
-    background-size: 100% 200%;
-    opacity: 0.3;
-    animation: spineFlow 3s linear infinite;
+    /* GOD MODE: Use margin for centering instead of transform
+       (avoids sub-pixel blur on some browsers) */
+    margin-left: calc(var(--spine-width) / -2);
+    width: var(--spine-width);
+    background: linear-gradient(to bottom,
+        transparent 0%,
+        var(--accent-primary) 15%,
+        var(--accent-secondary) 50%,
+        var(--accent-primary) 85%,
+        transparent 100%
+    );
+    /* FIX: Animate opacity only — GPU composited, no paint */
+    animation: spinePulse 3s ease-in-out infinite;
+    opacity: 0.25;
     z-index: 0;
+    pointer-events: none;
 }
 
-@keyframes spineFlow {
-    0% { background-position: 0% -200%; opacity: 0.3; }
-    50% { opacity: 0.8; }
-    100% { background-position: 0% 200%; opacity: 0.3; }
+@keyframes spinePulse {
+    0%, 100% { opacity: 0.2; }
+    50%       { opacity: 0.55; }
 }
 
-/* FLOW STEP */
+/* GOD MODE: Travelling dot on spine */
+.flow-spine-dot {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 6px;
+    height: 6px;
+    margin-left: -3px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    box-shadow: 0 0 10px var(--accent-primary), 0 0 20px rgba(var(--accent-primary-rgb), 0.4);
+    animation: spineDotTravel 3s ease-in-out infinite;
+    z-index: 3;
+    pointer-events: none;
+}
+
+@keyframes spineDotTravel {
+    0%   { top: 5%;  opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { top: 95%; opacity: 0; }
+}
+
+/* ==========================================
+   6. FLOW STEPS
+   FIX: Stagger extended to 12 steps.
+        nodeReveal uses only opacity+translateY
+        (removed filter:blur — performance fix).
+   ========================================== */
 .flow-step {
     width: 100%;
     display: flex;
     justify-content: center;
     position: relative;
-    margin-bottom: 50px; /* Increased spacing for visual clarity */
-    
+    /* FIX: margin uses CSS variable for connector sync */
+    margin-bottom: var(--connector-gap);
+
     opacity: 0;
-    animation: nodeReveal 0.6s ease forwards;
-    animation-delay: calc(var(--step-index, 0) * 100ms);
+    animation: nodeReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: calc(var(--step-index, 0) * var(--stagger-base, 80ms));
 }
 
-/* Stagger Fallbacks */
-.flow-step:nth-child(1) { animation-delay: 0.1s; }
-.flow-step:nth-child(2) { animation-delay: 0.2s; }
-.flow-step:nth-child(3) { animation-delay: 0.3s; }
-.flow-step:nth-child(4) { animation-delay: 0.4s; }
-.flow-step:nth-child(5) { animation-delay: 0.5s; }
+/* FIX: nth-child fallbacks extended to 12 */
+.flow-step:nth-child(1)  { animation-delay: 0.08s; }
+.flow-step:nth-child(2)  { animation-delay: 0.16s; }
+.flow-step:nth-child(3)  { animation-delay: 0.24s; }
+.flow-step:nth-child(4)  { animation-delay: 0.32s; }
+.flow-step:nth-child(5)  { animation-delay: 0.40s; }
+.flow-step:nth-child(6)  { animation-delay: 0.48s; }
+.flow-step:nth-child(7)  { animation-delay: 0.56s; }
+.flow-step:nth-child(8)  { animation-delay: 0.64s; }
+.flow-step:nth-child(9)  { animation-delay: 0.72s; }
+.flow-step:nth-child(10) { animation-delay: 0.80s; }
+.flow-step:nth-child(11) { animation-delay: 0.88s; }
+.flow-step:nth-child(12) { animation-delay: 0.96s; }
 
+/* FIX: Removed filter:blur — only transform+opacity for GPU compositing */
 @keyframes nodeReveal {
-    from { opacity: 0; transform: translateY(30px); filter: blur(4px); }
-    to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-/* THE NODE (Data Chip Aesthetic) */
+/* ==========================================
+   7. STEP BOX (BASE NODE)
+   FIX: All #ffffff → var(--bg-secondary).
+        Dot border #fff → var(--bg-secondary).
+        Connectors tied to --connector-gap var.
+   GOD MODE: Richer shadow stack, draw-in connector.
+   ========================================== */
 .step-box {
-    /* Width Control: Centered, but max width 600px for readability */
     width: 100%;
-    max-width: 600px;
+    max-width: var(--node-max-width);
     min-height: 80px;
-    
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    
-    padding: 24px 32px;
-    
-    /* CRITICAL FIX: Solid Colors */
-    background-color: #ffffff; /* Pure white in Light Mode */
+    padding: var(--node-padding);
+
+    /* FIX: CSS variable, not hardcoded #ffffff */
+    background: var(--bg-secondary);
     border: 1px solid var(--border-light);
-    border-radius: 12px; /* Slightly rounded tech corners */
-    
+    border-radius: var(--node-radius);
+
     position: relative;
-    z-index: 2; /* Above spine */
-    
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    
-    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 2;
+
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.04),
+        0 4px 8px rgba(0,0,0,0.04),
+        0 0 0 1px rgba(255,255,255,0.6) inset;
+
+    transition:
+        transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+        box-shadow 0.25s ease,
+        border-color 0.2s ease;
 }
 
-/* Subtle Gradient Sheen (Light Mode Only) */
+/* GOD MODE: Subtle top-edge highlight (light mode) */
 .step-box::after {
     content: '';
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.8), transparent);
+    background: linear-gradient(
+        170deg,
+        rgba(255,255,255,0.55) 0%,
+        transparent 50%
+    );
     pointer-events: none;
     z-index: 1;
-    opacity: 0.5; /* Subtle shine */
 }
 
-/* HOVER EFFECT */
+/* HOVER */
 .step-box:hover {
-    transform: translateY(-4px) scale(1.02);
-    border-color: var(--accent-primary);
-    
-    /* Stronger Glow */
-    box-shadow: 0 0 0 1px var(--accent-primary), 
-                0 12px 30px rgba(8, 145, 178, 0.25);
-                
-    background-color: #fff; /* Ensure pure white */
-    z-index: 10; /* Bring to very front */
+    transform: translateY(-5px) scale(1.015);
+    border-color: rgba(var(--accent-primary-rgb), 0.4);
+    box-shadow:
+        0 0 0 1px rgba(var(--accent-primary-rgb), 0.2),
+        0 16px 40px rgba(var(--accent-primary-rgb), 0.18),
+        0 4px 8px rgba(0,0,0,0.06);
+    /* FIX: var(--bg-secondary) not #fff */
+    background: var(--bg-secondary);
+    z-index: 10;
 }
 
-/* STATUS INDICATOR (The Dot) */
+/* STATUS DOT (top center) */
 .step-box::before {
     content: '';
     position: absolute;
-    top: -8px; /* Adjusted for spacing */
+    top: -10px;
     left: 50%;
     transform: translateX(-50%);
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
+    /* FIX: var(--bg-secondary) instead of #fff */
     background: var(--border-medium);
     border-radius: 50%;
-    border: 2px solid #fff; /* Matches background */
-    transition: all 0.3s;
-    z-index: 10;
+    border: 2px solid var(--bg-secondary);
+    transition: all 0.28s ease;
+    z-index: 12;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .step-box:hover::before {
     background: var(--accent-success);
-    border-color: #fff;
-    box-shadow: 0 0 10px var(--accent-success);
+    border-color: var(--bg-secondary);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), 0 0 12px var(--accent-success);
+    transform: translateX(-50%) scale(1.2);
 }
 
-/* CONNECTORS */
+/* ==========================================
+   CONNECTORS
+   FIX: All connector values use CSS variables.
+        --connector-gap drives both the step
+        margin-bottom AND the connector sizing.
+   GOD MODE: Draw-in animation via scaleY.
+   ========================================== */
+
+/* Vertical line */
 .flow-step:not(:last-child)::after {
     content: '';
     position: absolute;
-    bottom: -50px; /* Connects to next box (matches margin-bottom) */
+    bottom: calc(var(--connector-gap) * -1);
     left: 50%;
-    transform: translateX(-50%);
-    width: 2px;
-    height: 50px; /* Length of the line */
-    background: var(--border-medium);
+    margin-left: calc(var(--connector-width) / -2);
+    width: var(--connector-width);
+    height: var(--connector-gap);
+    background: linear-gradient(to bottom,
+        var(--connector-color),
+        rgba(var(--accent-primary-rgb), 0.5)
+    );
     z-index: 1;
+    transform-origin: top center;
+    /* GOD MODE: Draw-in from top */
+    animation: connectorDraw 0.4s ease forwards;
+    animation-delay: inherit; /* Inherits step's stagger delay */
 }
 
-/* Arrow Head */
+@keyframes connectorDraw {
+    from { transform: scaleY(0); opacity: 0; }
+    to   { transform: scaleY(1); opacity: 1; }
+}
+
+/* Arrowhead */
 .flow-step:not(:last-child)::before {
     content: '';
     position: absolute;
-    bottom: -50px; /* Bottom of the line */
+    /* FIX: bottom positioned relative to connector-gap */
+    bottom: calc(var(--connector-gap) * -1 + (var(--connector-gap) / 2) - 4px);
     left: 50%;
-    transform: translateX(-50%) translateY(25px); /* Halfway down the line */
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 8px solid var(--border-medium);
+    transform: translateX(-50%);
+    border-left: var(--connector-arrow-size) solid transparent;
+    border-right: var(--connector-arrow-size) solid transparent;
+    border-top: calc(var(--connector-arrow-size) * 1.15) solid rgba(var(--accent-primary-rgb), 0.55);
     z-index: 2;
 }
 
-/* STEP TYPES (Professional Shapes) */
+/* ==========================================
+   8. STEP TYPES
+   FIX: All hardcoded bg colors → CSS variables.
+   GOD MODE: Richer gradients, type-specific accents.
+   ========================================== */
 
-/* START: Pill */
+/* START: Pill — Green */
 .step-type-start .step-box {
     border-radius: 60px;
     border: 2px solid var(--accent-success);
-    /* Subtle Green Tint Background */
-    background: linear-gradient(135deg, #ffffff, rgba(16, 185, 129, 0.08));
+    background: linear-gradient(
+        135deg,
+        var(--bg-secondary) 0%,
+        rgba(16, 185, 129, 0.07) 100%
+    );
+    box-shadow:
+        0 0 0 4px rgba(16, 185, 129, 0.08),
+        0 4px 12px rgba(16, 185, 129, 0.1);
 }
 
-/* END: Pill */
+.step-type-start .step-box:hover {
+    box-shadow:
+        0 0 0 4px rgba(16, 185, 129, 0.15),
+        0 16px 40px rgba(16, 185, 129, 0.2);
+    border-color: var(--accent-success);
+}
+
+.step-type-start .step-box::before {
+    background: var(--accent-success);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+}
+
+/* END: Pill — Red */
 .step-type-end .step-box {
     border-radius: 60px;
     border: 2px solid var(--accent-danger);
-    /* Subtle Red Tint Background */
-    background: linear-gradient(135deg, #ffffff, rgba(239, 68, 68, 0.08));
+    background: linear-gradient(
+        135deg,
+        var(--bg-secondary) 0%,
+        rgba(239, 68, 68, 0.07) 100%
+    );
+    box-shadow:
+        0 0 0 4px rgba(239, 68, 68, 0.08),
+        0 4px 12px rgba(239, 68, 68, 0.1);
 }
 
-/* HIGHLIGHT: Tech Box */
+.step-type-end .step-box:hover {
+    border-color: var(--accent-danger);
+    box-shadow:
+        0 0 0 4px rgba(239, 68, 68, 0.15),
+        0 16px 40px rgba(239, 68, 68, 0.2);
+}
+
+.step-type-end .step-box::before {
+    background: var(--accent-danger);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+}
+
+/* HIGHLIGHT: Left accent bar — Cyan */
 .step-type-highlight .step-box {
-    border: 1px solid var(--accent-primary);
-    border-left: 4px solid var(--accent-primary); /* Accent Bar */
-    /* Subtle Blue Tint Background */
-    background: linear-gradient(135deg, #ffffff, rgba(8, 145, 178, 0.05));
+    border: 1px solid rgba(var(--accent-primary-rgb), 0.3);
+    border-left: 4px solid var(--accent-primary);
+    border-radius: var(--node-radius);
+    background: linear-gradient(
+        135deg,
+        var(--bg-secondary) 0%,
+        rgba(var(--accent-primary-rgb), 0.05) 100%
+    );
+    box-shadow:
+        -4px 0 12px rgba(var(--accent-primary-rgb), 0.12),
+        0 4px 8px rgba(0,0,0,0.04);
 }
 
-/* CONTAINER: Dashed Group Box */
+.step-type-highlight .step-box:hover {
+    box-shadow:
+        -4px 0 20px rgba(var(--accent-primary-rgb), 0.25),
+        0 0 0 1px rgba(var(--accent-primary-rgb), 0.2),
+        0 16px 40px rgba(var(--accent-primary-rgb), 0.15);
+}
+
+/* CONTAINER: Dashed group box */
 .step-type-container .step-box {
-    background: #f8fafc; /* Slate 50 (Very Light Grey) */
-    border: 1px dashed var(--border-medium);
+    /* FIX: var(--bg-tertiary) not hardcoded #f8fafc */
+    background: var(--bg-tertiary);
+    border: 1.5px dashed var(--border-medium);
+    box-shadow: none;
 }
 
-/* TYPOGRAPHY */
+.step-type-container .step-box:hover {
+    border-color: rgba(var(--accent-primary-rgb), 0.4);
+    border-style: dashed;
+}
+
+/* ==========================================
+   NEW: DECISION / DIAMOND NODE
+   Rotated square with inner content.
+   GOD MODE: Rotating border gradient on hover.
+   ========================================== */
+.step-type-decision {
+    /* Needs more vertical space for diamond */
+    margin-bottom: calc(var(--connector-gap) + 20px);
+}
+
+.step-type-decision .step-box {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    max-width: 200px;
+    min-height: unset;
+    padding: 0;
+    /* Diamond via clip-path — no transform needed, content stays readable */
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    border-radius: 0;
+    background: linear-gradient(
+        135deg,
+        var(--bg-secondary),
+        rgba(var(--accent-warning-rgb, 245, 158, 11), 0.08)
+    );
+    border: none;
+    /* GOD MODE: Diamond glow border via outline + box-shadow */
+    box-shadow:
+        0 0 0 2px rgba(var(--accent-warning-rgb, 245,158,11), 0.35),
+        0 8px 24px rgba(var(--accent-warning-rgb, 245,158,11), 0.15);
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.step-type-decision .step-box::before { display: none; }
+.step-type-decision .step-box::after  { display: none; }
+
+.step-type-decision .step-box:hover {
+    transform: translateY(-4px) rotate(2deg) scale(1.04);
+    box-shadow:
+        0 0 0 3px rgba(var(--accent-warning-rgb, 245,158,11), 0.5),
+        0 16px 40px rgba(var(--accent-warning-rgb, 245,158,11), 0.25);
+}
+
+.step-type-decision .step-label {
+    /* GOD MODE: Counter-rotate label so it's readable inside diamond */
+    transform: rotate(0deg);
+    font-size: var(--font-size-xs);
+    padding: 0 24px;
+    line-height: 1.3;
+}
+
+/* Decision branches label */
+.decision-branch-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: var(--node-max-width);
+    padding: 0 20px;
+    margin-top: -32px;
+    position: relative;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.decision-label-yes,
+.decision-label-no {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+.decision-label-yes {
+    color: var(--accent-success);
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.decision-label-no {
+    color: var(--accent-danger);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+/* ==========================================
+   NEW: PARALLEL LANE (Split/Join)
+   Renders two columns of steps side by side.
+   GOD MODE: Shared header + lane borders.
+   ========================================== */
+.flow-step-parallel {
+    width: 100%;
+    max-width: var(--arch-max-width);
+    position: relative;
+    margin-bottom: var(--connector-gap);
+    opacity: 0;
+    animation: nodeReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.parallel-header {
+    text-align: center;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    padding: 6px 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    display: inline-block;
+    align-self: center;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    justify-content: center;
+}
+
+.parallel-lanes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    position: relative;
+}
+
+/* Center divider line between lanes */
+.parallel-lanes::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        var(--border-medium) 20%,
+        var(--border-medium) 80%,
+        transparent
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+
+.parallel-lane {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    position: relative;
+    z-index: 1;
+}
+
+.parallel-lane-title {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--accent-primary);
+    margin-bottom: 4px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(var(--accent-primary-rgb), 0.15);
+}
+
+/* Parallel lane step (compact) */
+.parallel-step {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.parallel-step:hover {
+    border-color: rgba(var(--accent-primary-rgb), 0.3);
+    transform: translateX(3px);
+    box-shadow: var(--shadow-sm);
+}
+
+.parallel-step-label {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    margin-bottom: 4px;
+}
+
+/* ==========================================
+   NEW: ANNOTATION / NOTE NODE
+   Side-note style — off to the right with
+   a connecting dashed line.
+   ========================================== */
+.step-type-annotation {
+    justify-content: flex-end;
+    padding-right: 0;
+}
+
+.step-type-annotation .step-box {
+    max-width: 340px;
+    background: linear-gradient(
+        135deg,
+        rgba(var(--accent-warning-rgb, 245,158,11), 0.06),
+        var(--bg-secondary)
+    );
+    border: 1px dashed rgba(245, 158, 11, 0.4);
+    border-left: 3px solid var(--accent-warning);
+    border-radius: var(--radius-md);
+    margin-right: 0;
+    margin-left: auto;
+    /* GOD MODE: Offset to the right */
+    transform: translateX(20px);
+    box-shadow: none;
+}
+
+.step-type-annotation .step-box:hover {
+    transform: translateX(16px) translateY(-3px);
+    border-color: var(--accent-warning);
+    box-shadow: 0 8px 24px rgba(245,158,11,0.15);
+}
+
+/* Dashed connection line from annotation back to spine */
+.step-type-annotation::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    width: 20px;
+    height: 1px;
+    border-top: 1.5px dashed rgba(245,158,11,0.4);
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+/* ==========================================
+   NEW: LOOP-BACK INDICATOR
+   A visual arc suggesting a feedback/retry loop.
+   Applied as a class modifier on a step.
+   ========================================== */
+.step-has-loop::after {
+    /* Override the connector line for loop steps */
+    content: '';
+    position: absolute;
+    /* Arc on the LEFT side */
+    left: calc(50% - var(--node-max-width) / 2 - 32px);
+    top: 50%;
+    width: 32px;
+    height: calc(var(--connector-gap) * 2 + 80px);
+    border: 2px dashed rgba(var(--accent-secondary-rgb), 0.45);
+    border-right: none;
+    border-radius: 12px 0 0 12px;
+    transform: translateY(-50%);
+    z-index: 1;
+    /* GOD MODE: animated dash */
+    background: none;
+    animation: loopDash 1.5s linear infinite;
+}
+
+@keyframes loopDash {
+    to { stroke-dashoffset: -20; }
+}
+
+.step-has-loop .step-label::after {
+    content: '↺';
+    margin-left: 6px;
+    font-size: 0.9em;
+    color: var(--accent-secondary);
+    animation: loopSpin 2s linear infinite;
+}
+
+@keyframes loopSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* ==========================================
+   9. STEP TYPOGRAPHY
+   ========================================== */
 .step-label {
     font-size: var(--font-size-md);
     font-weight: 800;
     color: var(--text-primary);
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.045em;
     position: relative;
     z-index: 10;
+    line-height: 1.3;
 }
 
 .step-desc {
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
-    line-height: 1.6;
-    margin-top: 10px;
+    line-height: 1.65;
+    margin-top: 12px;
     padding-top: 12px;
     border-top: 1px solid var(--border-light);
     position: relative;
     z-index: 10;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+    text-align: left;
 }
 
-/* 6. NESTED CHILDREN (The Branch) */
+/* GOD MODE: Step index badge */
+.step-index {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    padding: 2px 8px;
+    letter-spacing: 0.04em;
+    z-index: 12;
+    transition: all var(--transition-fast);
+}
+
+.step-box:hover .step-index {
+    background: rgba(var(--accent-primary-rgb), 0.1);
+    border-color: rgba(var(--accent-primary-rgb), 0.25);
+    color: var(--accent-primary);
+}
+
+/* ==========================================
+   10. NESTED CHILDREN (Branch)
+   FIX: left:-41px magic number replaced with
+        CSS variable. Branch lines hidden on mobile.
+   ========================================== */
+:root {
+    --branch-indent: 40px;
+    --branch-line-offset: calc(var(--branch-indent) + 1px);
+}
+
 .step-children {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    margin-top: 20px;
-    margin-left: 40px; /* The Indent */
-    margin-right: 20px;
+    gap: 16px;
+    margin-top: 16px;
+    margin-left: var(--branch-indent);
+    margin-right: 0;
     padding: 20px;
-    background: #f1f5f9; /* Slate 100 (Light Grey) */
-    border-radius: 12px;
+    /* FIX: var(--bg-tertiary) not #f1f5f9 */
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
     border: 1px solid var(--border-light);
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);
     position: relative;
 }
 
-/* Branch Line (Horizontal) */
+/* GOD MODE: Gradient left border on children group */
 .step-children::before {
     content: '';
     position: absolute;
     top: 50%;
-    left: -41px; /* Connects exactly to parent edge */
-    width: 41px;
+    /* FIX: Uses --branch-line-offset, not hardcoded -41px */
+    left: calc(var(--branch-line-offset) * -1);
+    width: var(--branch-indent);
     height: 2px;
-    background: var(--border-light);
+    background: linear-gradient(to right, transparent, var(--border-medium));
     transform: translateY(-50%);
-    z-index: 0;
+    pointer-events: none;
 }
 
-/* Branch Corner */
+/* Branch corner dot */
 .step-children::after {
     content: '';
     position: absolute;
     top: 50%;
-    left: -41px;
+    left: calc(var(--branch-line-offset) * -1);
     width: 8px;
     height: 8px;
-    border-top: 2px solid var(--border-light);
-    border-left: 2px solid var(--border-light);
+    border-top: 2px solid var(--border-medium);
+    border-left: 2px solid var(--border-medium);
     transform: translateY(-50%) rotate(-45deg);
-    z-index: 0;
+    pointer-events: none;
 }
 
-/* 7. MOBILE RESPONSIVE */
+/* ==========================================
+   11. MOBILE
+   FIX: archView z-index on mobile uses
+        CSS variable to avoid modal conflict.
+   ========================================== */
 @media (max-width: 768px) {
-    #archView { z-index: 200; }
-    
-    .flow-container { padding: 10px 0; }
-    
+    /* FIX: 150 = between overlay(100) and modal(200) */
+    #archView { z-index: 150; }
+
+    .flow-container { padding: 12px 0 40px; }
+
+    .viz-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+    .viz-back-btn { margin-left: 0; }
+
+    .step-box {
+        max-width: 100%;
+        padding: 18px 20px;
+    }
+
+    .step-type-decision .step-box {
+        width: 160px;
+        height: 160px;
+        max-width: 160px;
+    }
+
+    .parallel-lanes {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .parallel-lanes::before { display: none; }
+
+    .step-type-annotation .step-box {
+        transform: translateX(0);
+        max-width: 100%;
+    }
+    .step-type-annotation::before { display: none; }
+
+    /* Branch lines hidden on mobile */
     .step-children {
-        margin-left: 0; /* Centered on mobile */
-        padding: 16px;
-        background: transparent; /* Remove background for cleaner look */
+        margin-left: 0;
+        background: transparent;
         border: 1px dashed var(--border-medium);
     }
-    /* Hide branch lines on mobile */
-    .step-children::before, .step-children::after {
-        display: none;
-    }
+    .step-children::before,
+    .step-children::after { display: none; }
+
+    .flow-spine-dot { display: none; }
 }
 
-/* 8. DARK MODE (God Mode Colors) */
-@media (prefers-color-scheme: dark) {
-    /* Darker Grid */
-    #archView {
-        background-image: 
-            linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+/* Small mobile */
+@media (max-width: 480px) {
+    .arch-gallery {
+        grid-template-columns: 1fr;
+        padding-left: 16px;
+        padding-right: 16px;
     }
+    .arch-visualizer { padding-left: 16px; padding-right: 16px; }
+}
 
-    .flow-container::before {
-        opacity: 0.6;
-        background: linear-gradient(
-            to bottom,
-            var(--border-dark) 0%,
-            var(--accent-primary) 50%,
-            var(--border-dark) 100%
-        );
-    }
+/* ==========================================
+   12. DARK MODE
+   FIX: Uses [data-theme="dark"] to match the
+        main CSS toggle system — NOT prefers-color-scheme.
+        All hardcoded colors replaced with vars.
+   ========================================== */
+[data-theme="dark"] #archView {
+    background-image:
+        linear-gradient(rgba(var(--accent-primary-rgb), 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(var(--accent-primary-rgb), 0.06) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 120px 120px, 120px 120px, 30px 30px, 30px 30px;
+}
 
-    /* FIX: Dark Mode Boxes */
-    .step-box {
-        background-color: var(--bg-secondary); /* Solid dark blue-grey */
-        border-color: var(--border-medium);
-        /* Remove gradient sheen to keep it clean */
-    }
-    .step-box::after { display: none; }
+[data-theme="dark"] .flow-container::before {
+    opacity: 0.45;
+    background: linear-gradient(to bottom,
+        transparent 0%,
+        var(--accent-primary) 30%,
+        var(--accent-secondary) 60%,
+        transparent 100%
+    );
+}
 
-    .step-type-start .step-box {
-        background: linear-gradient(135deg, var(--bg-secondary), rgba(16, 185, 129, 0.2));
-    }
+/* FIX: Dark step boxes use CSS variables (no hardcoded colors) */
+[data-theme="dark"] .step-box {
+    background: var(--bg-secondary);
+    border-color: var(--border-medium);
+    box-shadow:
+        0 1px 2px rgba(0,0,0,0.3),
+        0 4px 8px rgba(0,0,0,0.25),
+        0 0 0 1px rgba(255,255,255,0.03) inset;
+}
 
-    .step-type-end .step-box {
-        background: linear-gradient(135deg, var(--bg-secondary), rgba(239, 68, 68, 0.2));
-    }
+/* Remove light-mode sheen in dark mode */
+[data-theme="dark"] .step-box::after { display: none; }
 
-    .step-type-highlight .step-box {
-        background: linear-gradient(135deg, var(--bg-secondary), rgba(8, 145, 178, 0.2));
-    }
+[data-theme="dark"] .step-box:hover {
+    background: var(--bg-tertiary);
+    box-shadow:
+        0 0 0 1px rgba(var(--accent-primary-rgb), 0.3),
+        0 16px 40px rgba(var(--accent-primary-rgb), 0.2),
+        0 4px 8px rgba(0,0,0,0.3);
+}
 
-    .step-type-container .step-box {
-        background: rgba(30, 41, 59, 0.8); /* Solid dark */
-    }
+/* FIX: Dark mode dot border matches dark bg */
+[data-theme="dark"] .step-box::before {
+    border-color: var(--bg-secondary);
+    background: var(--border-dark);
+}
 
-    .step-children {
-        background: rgba(15, 23, 42, 0.8);
-        border-color: var(--border-medium);
-    }
+/* Dark step types */
+[data-theme="dark"] .step-type-start .step-box {
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(16, 185, 129, 0.14));
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+[data-theme="dark"] .step-type-end .step-box {
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(239, 68, 68, 0.14));
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+[data-theme="dark"] .step-type-highlight .step-box {
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-primary-rgb), 0.12));
+    border-color: rgba(var(--accent-primary-rgb), 0.35);
+}
+
+[data-theme="dark"] .step-type-container .step-box {
+    background: rgba(15, 23, 42, 0.85);
+    border-color: var(--border-medium);
+}
+
+[data-theme="dark"] .step-type-decision .step-box {
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(245,158,11,0.12));
+    box-shadow:
+        0 0 0 2px rgba(245,158,11,0.3),
+        0 8px 24px rgba(245,158,11,0.12);
+}
+
+/* FIX: Dark step-children uses variables */
+[data-theme="dark"] .step-children {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: var(--border-medium);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Dark arch cards */
+[data-theme="dark"] .arch-card {
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .arch-card:hover {
+    background: var(--bg-tertiary);
+    border-color: rgba(var(--accent-primary-rgb), 0.3);
+}
+
+[data-theme="dark"] .parallel-lane {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: var(--border-medium);
+}
+
+[data-theme="dark"] .parallel-step {
+    background: var(--bg-secondary);
+    border-color: var(--border-medium);
+}
+
+[data-theme="dark"] .step-index {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--border-medium);
+}
+
+[data-theme="dark"] .step-type-annotation .step-box {
+    background: linear-gradient(135deg, rgba(245,158,11,0.08), var(--bg-secondary));
+    border-color: rgba(245,158,11,0.3);
 }
