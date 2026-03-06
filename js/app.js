@@ -113,6 +113,10 @@ class App {
         } catch (err) {
             console.error('[App.setup] Critical error:', err);
         }
+        //Initialise Knowledge Paths
+        if (window.KnowledgePaths) {
+            window.KnowledgePaths.init();
+        }
     }
 
     // ==========================================
