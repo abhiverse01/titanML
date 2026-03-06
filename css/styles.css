@@ -402,28 +402,31 @@ body {
 }
 
 /* ==========================================
-   SIDEBAR (GLASSMORPHISM)
+   SIDEBAR (GOD MODE GLASSMORPHISM)
    FIX: Unified state system. .collapsed = hidden (desktop).
-        On mobile, .active = shown. Default mobile state = hidden via transform.
+   On mobile, .active = shown. Default mobile state = hidden via transform.
    GOD MODE: Refined glass, neon active indicators.
    ========================================== */
 .sidebar {
     width: var(--sidebar-width);
     height: 100%;
-    background: rgba(255, 255, 255, 0.78);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border-right: 1px solid rgba(255, 255, 255, 0.55);
-    /* GOD MODE: Inset highlight on right edge */
-    box-shadow: inset -1px 0 0 rgba(0,0,0,0.04), 2px 0 8px rgba(0,0,0,0.02);
+    /* GOD MODE: Deep Glassmorphism with subtle gradient */
+    background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0.70));
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-right: 1px solid rgba(255,255,255,0.55);
+    
+    /* GOD MODE: Inset highlight on right edge for depth */
+    box-shadow: inset -1px 0 0 rgba(0,0,0, 0.04), 2px 0 8px rgba(0,0,0,0.02);
+    
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    transition: transform var(--transition-slow), opacity var(--transition-slow),
-                box-shadow var(--transition-slow);
-    z-index: var(--z-sidebar);
+    transition: transform var(--transition-slow), box-shadow var(--transition-slow);
+    z-index: 40; /* Below Graph (50) */
     padding-bottom: var(--safe-area-bottom);
     position: relative;
+    
     /* FIX: Limit will-change to elements that actually animate */
     will-change: transform;
 }
@@ -441,10 +444,10 @@ body {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 20px 16px 0;
+    padding: 20px 16px 0; /* Extra padding for breathability */
     min-height: 0;
     -webkit-overflow-scrolling: touch;
-    /* GOD MODE: smooth scroll momentum */
+    /* GOD MODE: Smooth scroll momentum */
     scroll-behavior: smooth;
 }
 
@@ -452,32 +455,33 @@ body {
 
 .sidebar-title {
     font-size: var(--font-size-xs);
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.09em;
+    letter-spacing: 0.1em; /* Wider spacing for "God Mode" */
     color: var(--text-muted);
     margin-bottom: 12px;
     padding: 0 6px;
+    background: linear-gradient(90deg, transparent, rgba(8, 145, 178, 0.1)); /* Subtle tech stripe on title */
+    background-size: 200% 1px;
+    background-repeat: no-repeat;
+    background-position: left bottom;
 }
 
 /* ==========================================
-   CATEGORIES
-   GOD MODE: Neon pulse on active, smooth hover lift.
+   CATEGORIES (GOD MODE NEON PULSE)
    ========================================== */
-.category-list { display: flex; flex-direction: column; gap: 2px; }
+.category-list { display: flex; flex-direction: column; gap: 3px; }
 
 .category-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 12px;
+    padding: 12px 12px;
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: all var(--transition-fast);
     position: relative;
     min-height: 44px;
-    /* FIX: Make interactive elements focusable-friendly */
-    outline: none;
 }
 
 /* Left accent bar */
@@ -488,15 +492,15 @@ body {
     top: 50%;
     transform: translateY(-50%);
     width: 3px;
-    height: 0;
+    height: 0; /* Height starts at 0 */
+    border-radius: 0 2px 2px 0; /* Pill shape */
     background: var(--accent-primary);
-    border-radius: 0 2px 2px 0;
     transition: height var(--transition-base), box-shadow var(--transition-base);
 }
 
 .category-item:hover {
     background: var(--bg-hover);
-    transform: translateX(2px);
+    transform: translateX(4px);
 }
 
 /* GOD MODE: Neon active accent bar */
@@ -504,9 +508,13 @@ body {
     background: var(--bg-active);
 }
 .category-item.active::before {
-    height: 22px;
-    box-shadow: 0 0 10px rgba(var(--accent-primary-rgb), 0.6),
-                0 0 20px rgba(var(--accent-primary-rgb), 0.2);
+    height: 22px; /* Expands fully */
+    box-shadow: 0 0 12px currentColor, inset 0 0 20px rgba(255,255,255,0.5);
+}
+
+.category-item.active .category-dot {
+    transform: scale(1.2);
+    box-shadow: 0 0 6px currentColor, inset 0 0 0 2px rgba(255,255,255,0.5);
 }
 
 /* FIX: Focus-visible for keyboard nav */
@@ -527,11 +535,6 @@ body {
     transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
-.category-item.active .category-dot {
-    transform: scale(1.2);
-    box-shadow: 0 0 6px currentColor, inset 0 0 0 2px rgba(255,255,255,0.5);
-}
-
 .category-name {
     flex: 1;
     font-size: var(--font-size-sm);
@@ -539,8 +542,13 @@ body {
     color: var(--text-secondary);
     transition: color var(--transition-fast);
     white-space: nowrap;
+    /* FIX: Handle text overflow gracefully */
     overflow: hidden;
     text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1; /* Truncate to 1 line */
+    -webkit-box-orient: vertical;
+    -webkit-box-orient: vertical;
 }
 
 .category-item.active .category-name,
