@@ -29,12 +29,15 @@
     <link rel="stylesheet" href="css/styles.css">
     <!-- Architecture Styles -->
     <link rel="stylesheet" href="css/architectureStyles.css">
+    <!-- Knowledge Path Styles -->
+    <link rel="stylesheet" href="css/knowledgePath.css">
 
     <!-- Preload JS for faster startup -->
     <link rel="preload" href="js/data.js" as="script">
     <link rel="preload" href="js/graph.js" as="script">
     <link rel="preload" href="js/app.js" as="script">
     <link rel="preload" href="js/architecture.js" as="script">
+    
 
     <!-- Inline styles for Loader, Footer, and Dark Mode -->
     <style>
@@ -203,7 +206,7 @@
                         </div>
 
 
-                        <!-- NEW: Architecture Section -->
+                        <!-- Architecture Section -->
                         <div class="sidebar-section">
                             <h3 class="sidebar-title">Explore</h3>
                             <div class="category-list">
@@ -214,6 +217,16 @@
                             </div>
                         </div>
 
+                        
+                        <!-- KNOWLEDGE PATHS SECTION -->
+                        <div class="sidebar-section">
+                            <h3 class="sidebar-title">Curriculum</h3>
+                            <div class="filter-list">
+                                <div class="filter-item" id="navPaths" style="cursor: pointer;">
+                                    <div class="filter-dot" style="background: var(--accent-secondary);"></div>
+                                    <span>Knowledge Paths</span>
+                            </div>
+                        </div>
                     
                         
                         <div class="sidebar-section">
@@ -305,6 +318,21 @@
                     </div>
                 </div>
             </main>
+        </div>
+
+        <!-- KNOWLEDGE PATHS VIEW (Hidden by default) -->
+        <div id="pathView" class="arch-visualizer" style="display: none;">
+            <div class="viz-header">
+                <button class="viz-back-btn">← Back</button>
+                <div class="viz-title-group">
+                    <h2 style="font-size: 1.5rem; color: var(--text-primary);">Knowledge Paths</h2>
+                    <p style="color: var(--text-tertiary);">Structured learning paths to master AI.</p>
+                </div>
+            </div>
+            <div id="pathGallery" class="path-gallery"></div>
+            <div id="pathViewer">
+                <!-- Steps injected here by JS -->
+            </div>
         </div>
 
         <!-- Node Detail Panel -->
