@@ -1,26 +1,30 @@
-/* =====================================
-   KNOWLEDGE PATH SYSTEM
-   ===================================== */
+/* ==========================================
+   KNOWLEDGE PATH SYSTEM (GOD MODE - FINAL OPTIMIZED)
+   ========================================== */
 
-/* 1. CONTAINER */
+/* 1. CONTAINER & LAYOUT */
 #pathView {
     position: fixed;
     inset: 0;
     width: 100%;
     height: 100%;
-    z-index: 60; /* Above Graph/Sidebar */
+    z-index: 65; /* Bumped up by 5 to be safe above Architecture View (z-60) */
     background: var(--bg-primary);
     overflow-y: auto;
     display: none;
+    
+    /* Tech Grid Background */
     background-image: 
-        linear-gradient(rgba(0, 0,0, 0.03) 1px, transparent 1px),
+        linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-    background-size: 32px 32px;
+    background-size: 30px 30px;
 }
 
 /* 2. GALLERY GRID */
 .path-gallery {
     display: grid;
+    /* Use clamp for fluid typography */
+    font-family: var(--font-family);
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 24px;
     padding: 20px;
@@ -29,59 +33,97 @@
     width: 100%;
 }
 
+/* 3. CARD DESIGN (Holographic Tech Card) */
 .path-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-xl);
+    border-radius: 16px; /* Slightly more rounded than standard */
     padding: 24px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); /* Exaggerated bounce */
     position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 }
 
-.path-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
-    border-color: var(--accent-secondary);
+/* Tech Corner Decoration (God Mode Detail) */
+.path-card::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 20px; height: 20px;
+    border-top: 3px solid var(--accent-primary);
+    border-right: 3px solid var(--accent-primary);
+    border-top-right-radius: 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-/* Visuals */
+.path-card:hover {
+    transform: translateY(-6px); /* Higher lift on hover */
+    border-color: var(--accent-secondary);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1); /* God Mode Lift */
+    background: #fff;
+}
+
+.path-card:hover::after { opacity: 1; }
+
+/* Top Accent Bar */
+.path-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 3px;
+    background: var(--accent-secondary);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.path-card:hover::before { transform: scaleX(1); }
+
+/* 4. TYPOGRAPHY (Professional & Readable) */
 .path-title {
-    font-size: 1.25rem;
+    font-size: clamp(1.1rem, 2.5vw, 1.25rem); /* Fluid scaling */
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
 }
 
 .path-desc {
-    font-size: 0.95rem;
+    font-size: clamp(0.85rem, 1.2vw, 0.95rem);
     color: var(--text-tertiary);
     line-height: 1.5;
-    flex-grow: 1;
+    flex: 1;
     margin-bottom: 16px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Show max 2 lines */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .path-meta {
     align-self: flex-end;
+    margin-bottom: 4px;
 }
 
-/* Badge */
+/* Badge (Data Chip) */
 .badge {
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--accent-secondary);
-    padding: 4px 8px;
-    border-radius: 4px;
-    background: rgba(99, 102, 241, 0.1);
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    /* GOD MODE: Active State Styling */
+    background: rgba(99, 102, 241, 0.1); /* Very subtle tint */
+    border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
 /* Button */
@@ -91,50 +133,64 @@
     border: none;
     background: var(--accent-secondary);
     color: white;
-    font-weight: 600;
-    font-size: 0.9rem;
+    font-weight: 700;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
 }
 
 .path-start:hover {
     background: var(--accent-secondary);
     transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4);
 }
 
-/* 3. PATH VIEWER (The List of Steps) */
+/* 5. PATH VIEWER (The Timeline) */
 .path-view-title {
-    margin-bottom: 24px;
+    margin-bottom: 30px;
     padding: 0 20px;
     border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
+/* Timeline Styling */
 .path-steps-container {
     max-width: 800px;
     margin: 0 auto;
     padding-bottom: 60px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
 }
 
+/* Timeline Step */
 .path-step {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 16px;
+    padding: 20px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
+    border-radius: 12px;
     transition: all 0.2s ease;
+    border-left: 4px solid var(--accent-secondary); /* Timeline Accent */
 }
 
 .path-step:hover {
     border-color: var(--accent-secondary);
-    transform: translateX(4px);
+    transform:  /* Slight slide right */
+        translateX(4px); 
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-/* Step Number */
+/* Timeline Number */
 .step-index {
     width: 32px;
     height: 32px;
@@ -145,11 +201,12 @@
     align-items: center;
     justify-content: center;
     font-size: 0.9rem;
-    font-weight: 700;
+    font-weight: 800; /* Bolder font for the number */
     flex-shrink: 0;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
 }
 
-/* Step Name */
+/* Timeline Name */
 .step-name {
     flex: 1;
     font-size: 1rem;
@@ -157,7 +214,7 @@
     color: var(--text-primary);
 }
 
-/* Open Button */
+/* Action Button */
 .step-open {
     padding: 6px 12px;
     border-radius: 6px;
@@ -166,6 +223,7 @@
     color: var(--text-secondary);
     cursor: pointer;
     font-weight: 600;
+    font-size: 0.9rem;
     transition: all 0.2s;
 }
 
@@ -173,12 +231,15 @@
     background: var(--accent-secondary);
     color: white;
     border-color: var(--accent-secondary);
+    transform: scale(1.05);
 }
 
-/* 4. MOBILE RESPONSIVE */
+/* 6. MOBILE RESPONSIVE (Breakpoint: 768px) */
 @media (max-width: 768px) {
+    #pathView { z-index: 200; } /* Ensure top layer on mobile */
+
     .path-gallery {
-        grid-template-columns: 1fr; /* Single column on mobile */
+        grid-template-columns: 1fr; /* Single column */
         padding: 16px;
         gap: 16px;
     }
@@ -186,15 +247,35 @@
     .path-card {
         flex-direction: row; /* Horizontal cards on mobile */
         align-items: center;
-        height: auto;
+        height: auto; /* Auto height */
+        padding: 16px; /* Compensate padding */
     }
     
     .path-desc {
-        display: none; /* Hide description on mobile to save space */
+        display: none; /* Hide description on mobile */
         margin-bottom: 0;
     }
     
     .path-start {
-        margin-left: 10px;
+        margin-left: 10px; /* Separate button from text */
+    }
+    
+    /* Stack buttons vertically if height is constrained */
+    .path-name { font-size: 0.9rem; }
+    .path-meta { display: none; } /* Hide meta on mobile */
+    .path-step {
+        flex-direction: row; /* Horizontal layout for steps */
+        padding: 12px;
+        gap: 12px;
+    }
+    .step-index {
+        width: 24px; height: 24px; /* Smaller index on mobile */
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+    
+    /* Hide branch lines on mobile */
+    .step-children::before, .step-children::after {
+        display: none;
     }
 }
