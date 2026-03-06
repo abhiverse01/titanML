@@ -509,15 +509,17 @@
         loadScript("js/data.js", (err)=>{ if(err) return; 
             loadScript("js/graph.js", (err)=>{ if(err) return;
                 loadScript("js/architecture.js", (err)=>{ if(err) return;
-                    loadScript("js/app.js", (err)=>{ if(err) return; 
-                        setTimeout(()=>{ 
-                            const loader = document.getElementById('initial-loader');
-                            if(window.app && window.app.initialized){ 
-                                console.log("🚀 App is running."); 
-                                if(loader) loader.classList.add('hidden');
-                                clearInterval(emojiInterval); // Stop emoji rotation
-                            } else { console.error("❌ App failed to initialize."); }
-                        }, 500);
+                    loadScript("js/path.js", (err)=>{ if(err) return; // <--- THIS LINE IS for Path.Js Abhishek | Remember it. 
+                        loadScript("js/app.js", (err)=>{ if(err) return; 
+                            setTimeout(()=>{ 
+                                const loader = document.getElementById('initial-loader');
+                                if(window.app && window.app.initialized){ 
+                                    console.log("🚀 App is running."); 
+                                    if(loader) loader.classList.add('hidden');
+                                    clearInterval(emojiInterval); // Stop emoji rotation
+                                } else { console.error("❌ App failed to initialize."); }
+                            }, 500);
+                        });
                     });
                 });
             });
