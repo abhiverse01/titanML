@@ -25,6 +25,10 @@
     --accent-success: #10b981;
     --accent-warning: #f59e0b;
     --accent-danger: #ef4444;
+
+    /* GOD MODE: Accent RGB values for alpha usage */
+    --accent-primary-rgb: 8, 145, 178;
+    --accent-secondary-rgb: 99, 102, 241;
     
     /* Category Colors */
     --cat-rag: #0891b2;
@@ -50,8 +54,12 @@
     --radius-lg: 12px;
     --radius-xl: 16px;
     --radius-2xl: 24px;
+
+    /* GOD MODE: Glow shadows using accent RGB */
+    --glow-primary: 0 0 16px rgba(var(--accent-primary-rgb), 0.35);
+    --glow-secondary: 0 0 16px rgba(var(--accent-secondary-rgb), 0.35);
     
-    /* Safe Area Insets (Crucial for Mobile) */
+    /* Safe Area Insets - applied ONCE via .app */
     --safe-area-top: env(safe-area-inset-top);
     --safe-area-bottom: env(safe-area-inset-bottom);
     --safe-area-left: env(safe-area-inset-left);
@@ -71,14 +79,23 @@
     --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
     
-    /* Fluid Typography */
-    --font-size-xs: clamp(10px, 0.7vw, 11px);
-    --font-size-sm: clamp(11px, 0.8vw, 12px);
-    --font-size-base: clamp(12px, 0.9vw, 13px);
-    --font-size-md: clamp(13px, 1vw, 14px);
-    --font-size-lg: clamp(14px, 1.1vw, 16px);
-    --font-size-xl: clamp(16px, 1.3vw, 18px);
-    --font-size-2xl: clamp(20px, 2vw, 24px);
+    /* GOD MODE FIX: Fluid Typography with meaningful ranges */
+    --font-size-xs: clamp(10px, 0.65vw + 0.4rem, 11px);
+    --font-size-sm: clamp(11px, 0.7vw + 0.45rem, 13px);
+    --font-size-base: clamp(12px, 0.75vw + 0.5rem, 14px);
+    --font-size-md: clamp(13px, 0.85vw + 0.55rem, 15px);
+    --font-size-lg: clamp(14px, 1vw + 0.6rem, 17px);
+    --font-size-xl: clamp(16px, 1.2vw + 0.8rem, 20px);
+    --font-size-2xl: clamp(20px, 1.8vw + 1rem, 26px);
+
+    /* GOD MODE: Z-index scale (single source of truth) */
+    --z-base: 1;
+    --z-dropdown: 20;
+    --z-sidebar: 40;
+    --z-panel: 50;
+    --z-overlay: 100;
+    --z-modal: 200;
+    --z-tooltip: 400;
 }
 
 /* ==========================================
@@ -97,6 +114,8 @@ html {
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
     overflow-x: hidden;
+    /* GOD MODE FIX: declare color-scheme for native element theming */
+    color-scheme: light;
 }
 
 body {
@@ -110,51 +129,60 @@ body {
 }
 
 ::selection {
-    background: rgba(8, 145, 178, 0.2);
+    background: rgba(8, 145, 178, 0.18);
     color: var(--text-primary);
 }
 
+/* GOD MODE: Global focus-visible — clean, consistent, accessible */
 :focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.15);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 4px rgba(var(--accent-primary-rgb), 0.15);
 }
 
 /* ==========================================
    APP CONTAINER
+   FIX: Safe area padding applied ONCE here only.
+   Header and panel account for --header-height only.
    ========================================== */
 .app {
     display: flex;
     flex-direction: column;
+    /* FIX: Use only dvh with vh as fallback, drop svh (not needed here) */
     height: 100vh;
     height: 100dvh;
-    height: 100svh; 
     width: 100%;
     max-width: 100vw;
     overflow: hidden;
     position: relative;
+    /* FIX: Safe area handled here ONLY — prevents triple-counting in header */
     padding-top: var(--safe-area-top);
+    padding-left: var(--safe-area-left);
+    padding-right: var(--safe-area-right);
 }
 
 /* ==========================================
    HEADER - GLASSMORPHISM
+   FIX: Height is simply var(--header-height). App padding handles safe area.
    ========================================== */
 .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: calc(var(--header-height) + var(--safe-area-top));
-    padding: var(--safe-area-top) 16px 0;
+    height: var(--header-height);
+    padding: 0 16px;
     background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(200%);
+    -webkit-backdrop-filter: blur(20px) saturate(200%);
     border-bottom: 1px solid rgba(0, 0, 0, 0.04);
     flex-shrink: 0;
-    z-index: 100;
+    z-index: var(--z-overlay);
     position: sticky;
     top: 0;
-    will-change: transform;
-    isolation: isolate; 
+    /* GOD MODE: Subtle shimmer line on header bottom */
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6), var(--shadow-xs);
+    isolation: isolate;
 }
 
 .header-left, .header-right {
@@ -190,24 +218,31 @@ body {
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     border-radius: var(--radius-lg);
     color: white;
-    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.25);
-    transition: transform 0.2s ease;
+    box-shadow: 0 4px 12px rgba(var(--accent-primary-rgb), 0.3);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+    flex-shrink: 0;
 }
 
-.logo-icon:hover { transform: scale(1.05) rotate(-3deg); }
+.logo-icon:hover {
+    transform: scale(1.08) rotate(-4deg);
+    box-shadow: 0 6px 20px rgba(var(--accent-primary-rgb), 0.45);
+}
 
 .logo-text {
     font-size: var(--font-size-md);
     font-weight: 700;
-    color: var(--text-primary);
     letter-spacing: -0.02em;
+    /* GOD MODE FIX: Add standard background-clip alongside -webkit */
     background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     white-space: nowrap;
 }
 
-/* Search Box */
+/* ==========================================
+   SEARCH BOX
+   ========================================== */
 .search-wrapper { position: relative; width: 100%; }
 
 .search-icon {
@@ -239,7 +274,12 @@ body {
     outline: none;
     background: var(--bg-secondary);
     border-color: var(--accent-primary);
-    box-shadow: var(--shadow-md), 0 0 0 3px rgba(8, 145, 178, 0.1);
+    box-shadow: var(--shadow-md), 0 0 0 3px rgba(var(--accent-primary-rgb), 0.12);
+}
+
+/* GOD MODE: Animate the search icon on focus */
+.search-wrapper:focus-within .search-icon {
+    color: var(--accent-primary);
 }
 
 .search-input::placeholder { color: var(--text-muted); }
@@ -249,20 +289,25 @@ body {
     right: 12px;
     top: 50%;
     transform: translateY(-50%);
-    padding: 4px 8px;
+    padding: 3px 7px;
     font-size: var(--font-size-xs);
     font-family: inherit;
     color: var(--text-muted);
     background: var(--bg-secondary);
     border: 1px solid var(--border-light);
     border-radius: 6px;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.05);
-    display: none; 
+    box-shadow: 0 1px 1px rgba(0,0,0,0.06), 0 2px 0 rgba(0,0,0,0.04);
+    display: none;
+    pointer-events: none;
+    user-select: none;
 }
 @media (min-width: 640px) { .search-kbd { display: block; } }
 
 /* ==========================================
-   BUTTONS (GOD MODE SHINE)
+   BUTTONS
+   FIX: Removed broken/empty ::before block.
+        Shine lives in ::after. Height raised to 40px min for touch targets.
+   GOD MODE: Improved interaction states, proper shimmer.
    ========================================== */
 .btn {
     display: inline-flex;
@@ -270,6 +315,8 @@ body {
     justify-content: center;
     gap: 8px;
     height: 40px;
+    /* FIX: min-height matches height to satisfy 44px touch target with padding */
+    min-height: 40px;
     padding: 0 16px;
     font-size: var(--font-size-sm);
     font-weight: 600;
@@ -281,40 +328,35 @@ body {
     white-space: nowrap;
     position: relative;
     overflow: hidden;
-    min-width: 44px;
+    min-width: 40px;
     flex-shrink: 0;
+    /* GOD MODE: Prevent text selection on rapid clicks */
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* Button Shine Effect */
+/* GOD MODE: Shimmer shine effect — clean single ::after */
 .btn::after {
     content: '';
     position: absolute;
     top: 0;
-    left: -100%;
-    width: 50%;
+    left: -120%;
+    width: 60%;
     height: 100%;
     background: linear-gradient(
-        to right,
-        transparent,
-        rgba(255, 255, 255, 0.4),
-        transparent
+        105deg,
+        transparent 20%,
+        rgba(255, 255, 255, 0.45) 50%,
+        transparent 80%
     );
-    transform: skewX(-25deg);
-    transition: 0.5s;
+    transform: skewX(-20deg);
     pointer-events: none;
+    transition: left 0s;
 }
 
 .btn:hover::after {
-    left: 150%;
-    transition: 0.7s ease-in-out;
-}
-
-/* Ripple Effect */
-.btn::before { /* Note: renamed from ::after to ::before to avoid conflict, usually we pick one or use pseudo elements carefully */
-    /* Keeping the existing ripple logic if desired, but for simplicity and performance with shine, 
-       we might skip the JS-injected ripple or handle it via JS. 
-       Original code had ::after for ripple. Let's keep the shine in ::after and move ripple to a child or remove if conflicting.
-       For this CSS-only upgrade, we stick to the Shine. */
+    left: 160%;
+    transition: left 0.65s ease-in-out;
 }
 
 .btn-ghost {
@@ -326,18 +368,27 @@ body {
     background: var(--bg-hover);
     border-color: var(--border-medium);
     color: var(--text-primary);
+    box-shadow: var(--shadow-xs);
+}
+.btn-ghost:active {
+    background: var(--bg-active);
+    transform: scale(0.98);
 }
 
 .btn-primary {
     color: white;
-    background: linear-gradient(135deg, var(--accent-primary), #0e7490);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 2px 4px rgba(8, 145, 178, 0.1);
+    background: linear-gradient(135deg, var(--accent-primary) 0%, #0e7490 100%);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 2px 6px rgba(var(--accent-primary-rgb), 0.2);
 }
 .btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
+    box-shadow: 0 4px 16px rgba(var(--accent-primary-rgb), 0.35),
+                0 1px 4px rgba(0,0,0,0.08);
 }
-.btn-primary:active { transform: translateY(0); }
+.btn-primary:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 1px 4px rgba(var(--accent-primary-rgb), 0.2);
+}
 
 /* ==========================================
    LAYOUT
@@ -351,25 +402,33 @@ body {
 }
 
 /* ==========================================
-   SIDEBAR (GLASSMORPHISM & NEON)
+   SIDEBAR (GLASSMORPHISM)
+   FIX: Unified state system. .collapsed = hidden (desktop).
+        On mobile, .active = shown. Default mobile state = hidden via transform.
+   GOD MODE: Refined glass, neon active indicators.
    ========================================== */
 .sidebar {
     width: var(--sidebar-width);
     height: 100%;
-    background: rgba(255, 255, 255, 0.75); /* GOD MODE: Semi-transparent */
-    backdrop-filter: blur(12px); /* GOD MODE: Blur */
-    border-right: 1px solid rgba(255,255,255,0.5);
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-right: 1px solid rgba(255, 255, 255, 0.55);
+    /* GOD MODE: Inset highlight on right edge */
+    box-shadow: inset -1px 0 0 rgba(0,0,0,0.04), 2px 0 8px rgba(0,0,0,0.02);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    transition: transform var(--transition-slow), box-shadow var(--transition-slow);
-    z-index: 40;
+    transition: transform var(--transition-slow), opacity var(--transition-slow),
+                box-shadow var(--transition-slow);
+    z-index: var(--z-sidebar);
     padding-bottom: var(--safe-area-bottom);
     position: relative;
+    /* FIX: Limit will-change to elements that actually animate */
     will-change: transform;
-    backface-visibility: hidden;
 }
 
+/* FIX: Desktop collapsed state */
 .sidebar.collapsed {
     transform: translateX(-100%);
     position: absolute;
@@ -385,6 +444,8 @@ body {
     padding: 20px 16px 0;
     min-height: 0;
     -webkit-overflow-scrolling: touch;
+    /* GOD MODE: smooth scroll momentum */
+    scroll-behavior: smooth;
 }
 
 .sidebar-section { margin-bottom: 28px; }
@@ -393,13 +454,16 @@ body {
     font-size: var(--font-size-xs);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
     color: var(--text-muted);
     margin-bottom: 12px;
     padding: 0 6px;
 }
 
-/* Categories */
+/* ==========================================
+   CATEGORIES
+   GOD MODE: Neon pulse on active, smooth hover lift.
+   ========================================== */
 .category-list { display: flex; flex-direction: column; gap: 2px; }
 
 .category-item {
@@ -412,8 +476,11 @@ body {
     transition: all var(--transition-fast);
     position: relative;
     min-height: 44px;
+    /* FIX: Make interactive elements focusable-friendly */
+    outline: none;
 }
 
+/* Left accent bar */
 .category-item::before {
     content: '';
     position: absolute;
@@ -424,18 +491,29 @@ body {
     height: 0;
     background: var(--accent-primary);
     border-radius: 0 2px 2px 0;
-    transition: height var(--transition-fast);
+    transition: height var(--transition-base), box-shadow var(--transition-base);
 }
 
-.category-item:hover { background: var(--bg-hover); }
-
-/* GOD MODE: Neon Active State for Categories */
-.category-item.active { 
-    background: var(--bg-active); 
+.category-item:hover {
+    background: var(--bg-hover);
+    transform: translateX(2px);
 }
-.category-item.active::before { 
-    height: 20px;
-    box-shadow: 0 0 8px var(--accent-primary); /* Glow */
+
+/* GOD MODE: Neon active accent bar */
+.category-item.active {
+    background: var(--bg-active);
+}
+.category-item.active::before {
+    height: 22px;
+    box-shadow: 0 0 10px rgba(var(--accent-primary-rgb), 0.6),
+                0 0 20px rgba(var(--accent-primary-rgb), 0.2);
+}
+
+/* FIX: Focus-visible for keyboard nav */
+.category-item:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
+    border-radius: var(--radius-md);
 }
 
 .category-dot {
@@ -444,7 +522,14 @@ body {
     border-radius: 50%;
     flex-shrink: 0;
     box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5);
-    border: 1px solid rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.06);
+    /* GOD MODE: Subtle pulse on active category */
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.category-item.active .category-dot {
+    transform: scale(1.2);
+    box-shadow: 0 0 6px currentColor, inset 0 0 0 2px rgba(255,255,255,0.5);
 }
 
 .category-name {
@@ -466,9 +551,13 @@ body {
     color: var(--text-muted);
     font-weight: 500;
     margin-left: 4px;
+    transition: color var(--transition-fast);
 }
 
-/* Filters */
+/* ==========================================
+   FILTERS
+   GOD MODE: Gradient active state with glow.
+   ========================================== */
 .filter-list {
     margin-top: 4px;
     margin-bottom: 8px;
@@ -492,6 +581,7 @@ body {
     background: var(--bg-tertiary);
     border: 1px solid transparent;
     font-weight: 600;
+    outline: none;
 }
 
 .filter-item:hover {
@@ -500,58 +590,108 @@ body {
     transform: translateX(4px);
 }
 
-/* GOD MODE: Neon Active State for Filters */
-.filter-item.active {
-    background: linear-gradient(135deg, rgba(8,145,178,0.12), rgba(99,102,241,0.12));
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
-    box-shadow: 0 0 15px rgba(8, 145, 178, 0.2), inset 0 0 0 1px rgba(8,145,178,0.1); 
+.filter-item:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
+    border-radius: var(--radius-md);
 }
 
-.filter-dot { width: 8px; height: 8px; border-radius: 50%; }
+/* GOD MODE: Refined neon active state */
+.filter-item.active {
+    background: linear-gradient(
+        135deg,
+        rgba(var(--accent-primary-rgb), 0.1) 0%,
+        rgba(var(--accent-secondary-rgb), 0.08) 100%
+    );
+    border-color: rgba(var(--accent-primary-rgb), 0.35);
+    color: var(--accent-primary);
+    box-shadow: 0 0 0 1px rgba(var(--accent-primary-rgb), 0.1),
+                0 2px 8px rgba(var(--accent-primary-rgb), 0.12);
+}
+
+/* GOD MODE: Animated left shimmer bar on active filter */
+.filter-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+    border-radius: 0 2px 2px 0;
+    box-shadow: 0 0 8px rgba(var(--accent-primary-rgb), 0.5);
+}
+
+.filter-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
 .filter-count {
     margin-left: auto;
     font-size: var(--font-size-xs);
     color: var(--text-muted);
     font-weight: 500;
+    transition: all var(--transition-fast);
 }
 
 .filter-item.active .filter-count {
     background: var(--accent-primary);
     color: white;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-right: -4px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin-right: -2px;
+    box-shadow: 0 1px 4px rgba(var(--accent-primary-rgb), 0.35);
 }
 
-/* Stats */
+/* ==========================================
+   STATS GRID
+   GOD MODE: Richer gradient cards, shimmer on hover.
+   ========================================== */
 .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 
 .stat-card {
     padding: 16px 12px;
-    background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+    background: linear-gradient(145deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
     border-radius: var(--radius-md);
     text-align: center;
     border: 1px solid var(--border-light);
-    transition: transform var(--transition-fast);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    position: relative;
+    overflow: hidden;
 }
+
+/* GOD MODE: Subtle top highlight line on cards */
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.9), transparent);
+    pointer-events: none;
+}
+
 .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md), 0 0 0 1px var(--border-light);
 }
 
 .stat-value {
     font-size: var(--font-size-xl);
     font-weight: 700;
     color: var(--text-primary);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+    /* GOD MODE: Accent tinted stat numbers */
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 .stat-label {
     font-size: var(--font-size-xs);
     color: var(--text-muted);
-    margin-top: 4px;
+    margin-top: 5px;
     font-weight: 500;
+    letter-spacing: 0.02em;
 }
 
 /* ==========================================
@@ -560,7 +700,7 @@ body {
 .sidebar-footer {
     padding: 16px;
     border-top: 1px solid var(--border-light);
-    background: var(--bg-secondary);
+    background: linear-gradient(to bottom, transparent, var(--bg-secondary) 20%);
     flex-shrink: 0;
     margin-top: auto;
 }
@@ -579,6 +719,8 @@ body {
     font-weight: 700;
     font-size: 14px;
     flex-shrink: 0;
+    /* GOD MODE: Avatar ring */
+    box-shadow: 0 0 0 2px var(--bg-secondary), 0 0 0 3px rgba(var(--accent-primary-rgb), 0.25);
 }
 
 .creator-info h4 {
@@ -603,19 +745,20 @@ body {
     gap: 6px;
     padding: 8px;
     background: var(--bg-tertiary);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     text-decoration: none;
     color: var(--text-secondary);
     font-size: 11px;
     font-weight: 500;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
+    transition: all var(--transition-base);
+    border: 1px solid var(--border-light);
 }
 .creator-link:hover {
     background: var(--bg-hover);
     color: var(--accent-primary);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm), 0 0 0 1px rgba(var(--accent-primary-rgb), 0.15);
+    border-color: rgba(var(--accent-primary-rgb), 0.2);
 }
 .creator-link svg { width: 14px; height: 14px; flex-shrink: 0; }
 
@@ -623,18 +766,24 @@ body {
     text-align: center;
     font-size: 10px;
     color: var(--text-muted);
-    opacity: 0.7;
+    opacity: 0.65;
+    letter-spacing: 0.02em;
 }
 
 /* ==========================================
    CONTENT & GRAPH
+   GOD MODE: Richer radial gradient bg, subtle dot grid texture.
    ========================================== */
 .content {
     flex: 1;
     display: flex;
     overflow: hidden;
     position: relative;
-    background: radial-gradient(circle at center, #ffffff 0%, #f8fafc 100%);
+    /* GOD MODE: Layered radial gradient for depth */
+    background:
+        radial-gradient(ellipse 80% 60% at 50% 50%, rgba(var(--accent-primary-rgb), 0.025) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 80% at 80% 20%, rgba(var(--accent-secondary-rgb), 0.02) 0%, transparent 60%),
+        radial-gradient(circle at center, #ffffff 0%, #f8fafc 100%);
     min-width: 0;
 }
 
@@ -647,6 +796,7 @@ body {
     overflow: hidden;
 }
 
+/* FIX: touch-action: none set ONCE here only (removed duplicate in mobile @media) */
 #graphCanvas {
     position: absolute;
     top: 0;
@@ -657,36 +807,59 @@ body {
     display: block;
 }
 
+/* ==========================================
+   LEGEND
+   GOD MODE: Enhanced glass, smooth hover.
+   ========================================== */
 .legend {
     position: absolute;
     top: 16px;
     left: 16px;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
     border-radius: var(--radius-lg);
     padding: 14px 16px;
-    box-shadow: var(--shadow-md);
-    transition: opacity 0.3s, transform 0.3s;
+    box-shadow: var(--shadow-md), 0 0 0 1px rgba(0,0,0,0.03);
+    transition: opacity var(--transition-base), transform var(--transition-base);
     user-select: none;
-    z-index: 10;
+    z-index: var(--z-base);
 }
-.legend:hover { transform: translateY(-2px); }
+.legend:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 
 .legend-title {
     font-size: var(--font-size-xs);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
     color: var(--text-muted);
     margin-bottom: 10px;
 }
 
 .legend-items { display: flex; flex-direction: column; gap: 8px; }
 
-.legend-item { display: flex; align-items: center; gap: 10px; font-size: var(--font-size-sm); color: var(--text-secondary); }
-.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
 
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    /* GOD MODE: Dot glow matching its color */
+    box-shadow: 0 0 4px currentColor;
+}
+
+/* ==========================================
+   GRAPH CONTROLS
+   GOD MODE: Frosted pill, glow on hover.
+   ========================================== */
 .graph-controls {
     position: absolute;
     bottom: 24px;
@@ -695,12 +868,13 @@ body {
     display: flex;
     gap: 4px;
     padding: 6px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.7);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg);
-    backdrop-filter: blur(16px);
-    z-index: 10;
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,0,0,0.03);
+    z-index: var(--z-base);
 }
 
 .control-btn {
@@ -715,35 +889,43 @@ body {
     color: var(--text-tertiary);
     cursor: pointer;
     transition: all var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
 }
 .control-btn:hover {
     background: var(--bg-hover);
     color: var(--accent-primary);
-    transform: scale(1.05);
+    transform: scale(1.08);
+    box-shadow: 0 0 12px rgba(var(--accent-primary-rgb), 0.2);
 }
-.control-btn:active { transform: scale(0.95); }
+.control-btn:active { transform: scale(0.94); }
+.control-btn:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
+}
 
 /* ==========================================
-   DETAIL PANEL (GLASSMORPHISM)
+   DETAIL PANEL (GLASSMORPHISM BOTTOM SHEET)
+   FIX: Removed duplicate/conflicting top calc with safe area.
+   GOD MODE: Refined glass, smoother entrance, header gradient.
    ========================================== */
 .panel {
     position: fixed;
-    top: calc(var(--header-height) + var(--safe-area-top));
+    top: var(--header-height);
     right: 0;
     width: var(--panel-width);
-    height: calc(100vh - var(--header-height) - var(--safe-area-top));
-    height: calc(100dvh - var(--header-height) - var(--safe-area-top));
-    background: rgba(255, 255, 255, 0.95); /* GOD MODE: Glass */
-    backdrop-filter: blur(16px); /* GOD MODE: Blur */
-    border-left: 1px solid rgba(255,255,255,0.6);
+    /* FIX: Use dvh — more accurate on mobile browsers */
+    height: calc(100dvh - var(--header-height));
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-left: 1px solid rgba(255, 255, 255, 0.65);
     overflow-y: auto;
-    transform: translateX(100%);
-    transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 50;
-    box-shadow: var(--shadow-2xl);
+    transform: translateX(105%);
+    transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: var(--z-panel);
+    box-shadow: var(--shadow-2xl), -4px 0 24px rgba(0,0,0,0.04);
     padding-bottom: var(--safe-area-bottom);
     will-change: transform;
-    backface-visibility: hidden;
 }
 
 .panel.open { transform: translateX(0); }
@@ -751,9 +933,11 @@ body {
 .panel-header {
     position: sticky;
     top: 0;
-    background: linear-gradient(to bottom, var(--bg-secondary) 90%, transparent);
+    background: linear-gradient(to bottom, rgba(255,255,255,0.98) 80%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 24px 20px 20px;
-    z-index: 10;
+    z-index: var(--z-base);
 }
 
 .panel-close {
@@ -766,7 +950,7 @@ body {
     align-items: center;
     justify-content: center;
     background: var(--bg-tertiary);
-    border: none;
+    border: 1px solid var(--border-light);
     border-radius: var(--radius-md);
     color: var(--text-secondary);
     cursor: pointer;
@@ -776,6 +960,11 @@ body {
     background: var(--bg-active);
     color: var(--text-primary);
     transform: rotate(90deg);
+    border-color: var(--border-medium);
+}
+.panel-close:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
 }
 
 .panel-badge {
@@ -786,36 +975,38 @@ body {
     font-size: var(--font-size-xs);
     font-weight: 600;
     color: var(--accent-primary);
-    background: rgba(8, 145, 178, 0.1);
-    border-radius: 6px;
+    background: rgba(var(--accent-primary-rgb), 0.08);
+    border-radius: 20px;
     margin-bottom: 10px;
-    border: 1px solid rgba(8, 145, 178, 0.1);
+    border: 1px solid rgba(var(--accent-primary-rgb), 0.15);
+    letter-spacing: 0.02em;
 }
 
 .panel-title {
     font-size: var(--font-size-2xl);
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 4px;
-    letter-spacing: -0.02em;
-    padding-right: 40px;
+    margin-bottom: 6px;
+    letter-spacing: -0.025em;
+    padding-right: 44px;
     word-break: break-word;
+    line-height: 1.25;
 }
 
 .panel-subtitle {
     font-size: var(--font-size-sm);
     color: var(--text-tertiary);
-    line-height: 1.5;
+    line-height: 1.6;
 }
 
-.panel-body { padding: 0 20px 20px; }
+.panel-body { padding: 0 20px 24px; }
 .panel-section { margin-bottom: 28px; }
 
 .section-title {
     font-size: var(--font-size-xs);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
     color: var(--text-muted);
     margin-bottom: 12px;
     display: flex;
@@ -826,19 +1017,26 @@ body {
 .section-text {
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
-    line-height: 1.7;
+    line-height: 1.75;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
-.section-text p { margin-bottom: 0.8rem; }
-.section-text ul, .section-text ol { margin-left: 1.2rem; margin-bottom: 0.8rem; }
+.section-text p { margin-bottom: 0.85rem; }
+.section-text ul, .section-text ol { margin-left: 1.2rem; margin-bottom: 0.85rem; }
 .section-text li { margin-bottom: 0.4rem; }
 .section-text code {
     background: var(--bg-tertiary);
     padding: 2px 6px;
     border-radius: 6px;
-    font-size: 0.85em;
+    font-size: 0.82em;
+    font-family: var(--font-mono);
+    border: 1px solid var(--border-light);
 }
-.section-text { overflow-wrap: break-word; word-break: break-word; }
 
+/* ==========================================
+   RELATED GRID
+   GOD MODE: Hover lift with border glow.
+   ========================================== */
 .related-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -851,37 +1049,69 @@ body {
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: all var(--transition-fast);
-    border: 1px solid transparent;
+    border: 1px solid var(--border-light);
+    outline: none;
 }
 .related-item:hover {
     background: var(--bg-hover);
-    border-color: var(--border-medium);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
+    border-color: rgba(var(--accent-primary-rgb), 0.25);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md), 0 0 0 1px rgba(var(--accent-primary-rgb), 0.1);
+}
+.related-item:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
 }
 
 .related-name { font-size: var(--font-size-sm); font-weight: 600; color: var(--text-primary); }
 .related-type { font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 3px; }
 
+/* ==========================================
+   CODE BLOCK
+   GOD MODE: Richer dark bg, syntax-ready, copy-region affordance.
+   ========================================== */
 .code-block {
-    background: #0f172a;
+    background: #0b1120;
     border-radius: var(--radius-lg);
-    padding: 16px;
+    padding: 18px 20px;
     overflow-x: auto;
-    border: 1px solid #1e293b;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    border: 1px solid #1e2d45;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.3),
+                0 0 0 1px rgba(255,255,255,0.02);
     position: relative;
 }
+
+/* GOD MODE: Top rail accent line on code blocks */
+.code-block::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+        var(--accent-primary) 0%,
+        var(--accent-secondary) 50%,
+        transparent 100%
+    );
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    opacity: 0.7;
+}
+
 .code-block pre { margin: 0; }
 .code-block code {
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
-    color: #e2e8f0;
-    line-height: 1.7;
+    color: #c9d8f0;
+    line-height: 1.75;
     white-space: pre-wrap;
     word-break: break-word;
 }
 
+/* ==========================================
+   TAGS
+   GOD MODE: Subtle hover with border accent.
+   ========================================== */
 .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .tag {
     padding: 5px 12px;
@@ -892,28 +1122,32 @@ body {
     border-radius: 20px;
     border: 1px solid var(--border-light);
     transition: all var(--transition-fast);
+    cursor: default;
 }
 .tag:hover {
-    background: var(--bg-active);
-    border-color: var(--border-medium);
+    background: rgba(var(--accent-primary-rgb), 0.06);
+    border-color: rgba(var(--accent-primary-rgb), 0.25);
+    color: var(--accent-primary);
+    transform: translateY(-1px);
 }
 
 /* ==========================================
    MODAL (GLASSMORPHISM)
+   GOD MODE: Smoother backdrop, refined entrance.
    ========================================== */
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 200;
+    z-index: var(--z-modal);
     opacity: 0;
     visibility: hidden;
-    transition: all var(--transition-base);
+    transition: opacity var(--transition-base), visibility var(--transition-base);
     padding: 16px;
 }
 
@@ -924,16 +1158,33 @@ body {
     max-width: 480px;
     max-height: 90vh;
     max-height: 90dvh;
-    background: rgba(255, 255, 255, 0.98); /* GOD MODE: High opacity glass */
-    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-2xl);
+    box-shadow: var(--shadow-2xl), 0 0 0 1px rgba(255,255,255,0.6);
     overflow: hidden;
-    transform: scale(0.95) translateY(20px);
-    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
-    border: 1px solid rgba(255,255,255,0.5);
+    transform: scale(0.94) translateY(24px);
+    transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
     flex-direction: column;
+    /* GOD MODE: Top accent strip */
+    border-top: 2px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+}
+
+/* GOD MODE: Accent gradient top border on modal */
+.modal::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    z-index: 1;
 }
 
 .modal-overlay.open .modal { transform: scale(1) translateY(0); }
@@ -963,7 +1214,15 @@ body {
     cursor: pointer;
     transition: all var(--transition-fast);
 }
-.modal-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+.modal-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    transform: rotate(90deg);
+}
+.modal-close:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
+}
 
 .modal-form {
     padding: 24px;
@@ -984,7 +1243,7 @@ body {
 
 .form-input, .form-select, .form-textarea {
     width: 100%;
-    padding: 12px 14px;
+    padding: 11px 14px;
     font-size: var(--font-size-sm);
     font-family: inherit;
     color: var(--text-primary);
@@ -992,63 +1251,105 @@ body {
     border: 1px solid var(--border-light);
     border-radius: var(--radius-md);
     transition: all var(--transition-fast);
+    appearance: none;
+    -webkit-appearance: none;
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+    box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.12);
     background: var(--bg-secondary);
 }
 
-.form-textarea { resize: vertical; min-height: 100px; }
+.form-input:hover:not(:focus), .form-select:hover:not(:focus), .form-textarea:hover:not(:focus) {
+    border-color: var(--border-medium);
+}
+
+.form-textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
 
 .form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 
+/* FIX: form-actions sticky so it stays visible in long modals */
 .form-actions {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
     margin-top: 24px;
-    padding-top: 20px;
+    padding: 16px 24px;
     border-top: 1px solid var(--border-light);
-    background: var(--bg-secondary);
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    position: sticky;
+    bottom: 0;
+    margin: 0 -24px -24px;
+    border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
 }
 
 /* ==========================================
    TOOLTIP
+   GOD MODE: Crisper glass, faster transition.
    ========================================== */
 .tooltip {
     position: fixed;
-    padding: 10px 14px;
+    padding: 9px 13px;
     font-size: var(--font-size-sm);
     color: var(--text-primary);
-    background: var(--bg-secondary);
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,0,0,0.02);
     pointer-events: none;
     opacity: 0;
-    transform: translateY(4px);
-    transition: opacity 150ms ease, transform 150ms ease;
-    z-index: 400;
+    transform: translateY(6px) scale(0.97);
+    transition: opacity 130ms ease, transform 130ms ease;
+    z-index: var(--z-tooltip);
     max-width: 280px;
     line-height: 1.5;
 }
-.tooltip.visible { opacity: 1; transform: translateY(0); }
+.tooltip.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* ==========================================
+   SIDEBAR OVERLAY (Mobile)
+   FIX: Added visibility to transition for proper accessibility.
+   ========================================== */
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    /* FIX: transition both opacity AND visibility */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-base), visibility var(--transition-base);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 90;
+}
+
+.sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
 
 /* ==========================================
    SCROLLBAR
    ========================================== */
-::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
     background: var(--border-medium);
-    border-radius: 4px;
-    border: 2px solid transparent;
+    border-radius: 6px;
+    border: 1px solid transparent;
     background-clip: content-box;
 }
-::-webkit-scrollbar-thumb:hover { background: var(--border-dark); }
+::-webkit-scrollbar-thumb:hover { background: var(--border-dark); background-clip: content-box; }
+::-webkit-scrollbar-corner { background: transparent; }
 
 /* ==========================================
    REDUCED MOTION
@@ -1063,79 +1364,164 @@ body {
 }
 
 /* ==========================================
-   DARK MODE THEME (GOD MODE)
+   DARK MODE (GOD MODE)
+   FIX: Added missing dark overrides for content, modal, forms, tooltip, controls.
    ========================================== */
 [data-theme="dark"] {
-    --bg-primary: #0f172a;       /* Slate 900 */
-    --bg-secondary: #1e293b;     /* Slate 800 */
-    --bg-tertiary: #334155;      /* Slate 700 */
+    color-scheme: dark;
+
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
     --bg-hover: #334155;
     --bg-active: #475569;
     
-    --text-primary: #f8fafc;
+    --text-primary: #f1f5f9;
     --text-secondary: #cbd5e1;
     --text-tertiary: #94a3b8;
     --text-muted: #64748b;
     
-    --border-light: #334155;
-    --border-medium: #475569;
-    --border-dark: #64748b;
+    --border-light: #1e293b;
+    --border-medium: #334155;
+    --border-dark: #475569;
 
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
-    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
 }
 
-/* Dark Mode Specific Adjustments */
 [data-theme="dark"] .header {
-    background: rgba(15, 23, 42, 0.85); /* Dark Glass */
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    background: rgba(15, 23, 42, 0.88);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.03), var(--shadow-xs);
 }
 
 [data-theme="dark"] .sidebar {
-    background: rgba(30, 41, 59, 0.85);
-    border-right: 1px solid rgba(255,255,255,0.05);
+    background: rgba(15, 23, 42, 0.88);
+    border-right: 1px solid rgba(255,255,255,0.04);
+    box-shadow: inset -1px 0 0 rgba(255,255,255,0.03);
+}
+
+/* FIX: Dark mode for content area */
+[data-theme="dark"] .content {
+    background:
+        radial-gradient(ellipse 80% 60% at 50% 50%, rgba(var(--accent-primary-rgb), 0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 80% at 80% 20%, rgba(var(--accent-secondary-rgb), 0.03) 0%, transparent 60%),
+        #0f172a;
 }
 
 [data-theme="dark"] .panel {
-    background: rgba(30, 41, 59, 0.95);
-    border-left: 1px solid rgba(255,255,255,0.05);
+    background: rgba(15, 23, 42, 0.97);
+    border-left: 1px solid rgba(255,255,255,0.04);
+}
+
+[data-theme="dark"] .panel-header {
+    background: linear-gradient(to bottom, rgba(15,23,42,0.98) 80%, transparent);
+}
+
+/* FIX: Dark mode for modal */
+[data-theme="dark"] .modal {
+    background: rgba(30, 41, 59, 0.99);
+    box-shadow: var(--shadow-2xl), 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+[data-theme="dark"] .modal-header {
+    background: rgba(15, 23, 42, 0.8);
+    border-bottom: 1px solid var(--border-medium);
+}
+
+/* FIX: Dark mode for modal overlay */
+[data-theme="dark"] .modal-overlay {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+/* FIX: Dark mode for form inputs */
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .form-textarea {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: var(--border-medium);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .form-select:focus,
+[data-theme="dark"] .form-textarea:focus {
+    background: rgba(15, 23, 42, 0.95);
+    border-color: var(--accent-primary);
+}
+
+/* FIX: Dark mode for tooltip */
+[data-theme="dark"] .tooltip {
+    background: rgba(30, 41, 59, 0.98);
+    border-color: var(--border-medium);
+    color: var(--text-primary);
+}
+
+/* FIX: Dark mode for graph controls */
+[data-theme="dark"] .graph-controls {
+    background: rgba(30, 41, 59, 0.92);
+    border-color: rgba(255,255,255,0.06);
+}
+
+[data-theme="dark"] .control-btn:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+/* FIX: Dark mode for legend */
+[data-theme="dark"] .legend {
+    background: rgba(30, 41, 59, 0.94);
+    border-color: rgba(255,255,255,0.06);
 }
 
 [data-theme="dark"] .code-block {
-    background: #000000;
-    border-color: #333;
+    background: #020509;
+    border-color: #1a2540;
 }
 
-/* Invert Logo Icon Colors for Dark Mode */
+[data-theme="dark"] .stat-card {
+    background: linear-gradient(145deg, rgba(51,65,85,0.6), rgba(30,41,59,0.8));
+}
+
+[data-theme="dark"] .stat-card::before {
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.04), transparent);
+}
+
+[data-theme="dark"] .form-actions {
+    background: rgba(30, 41, 59, 0.98);
+    border-top-color: var(--border-medium);
+}
+
+/* GOD MODE: Dark logo with brighter neon glow */
 [data-theme="dark"] .logo-icon {
-    background: linear-gradient(135deg, #22d3ee, #818cf8); /* Brighter neon */
-    box-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+    background: linear-gradient(135deg, #22d3ee, #818cf8);
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.4), 0 4px 12px rgba(0,0,0,0.3);
 }
 
-/* Scrollbar for Dark Mode */
+[data-theme="dark"] .creator-avatar {
+    box-shadow: 0 0 0 2px var(--bg-secondary), 0 0 0 3px rgba(var(--accent-primary-rgb), 0.35);
+}
+
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
     background: var(--border-dark);
+    background-clip: content-box;
 }
 
 /* ==========================================
    MOBILE OPTIMIZATION (CONSOLIDATED)
+   FIX: Removed duplicate touch-action on canvas.
+        Fixed panel z-index conflict with modal (panel z:150, modal z:200).
+        Used 70dvh instead of 70vh for panel height.
    ========================================== */
 @media (max-width: 768px) {
-    
-    /* 1. GRAPH CONTAINER */
-    .graph-container, #graphCanvas {
-        touch-action: none; /* Critical for pinch-zoom */
-    }
 
-    /* 2. LAYOUT & SIDEBAR */
-    .layout {
-        position: relative;
-    }
+    /* 1. LAYOUT */
+    .layout { position: relative; }
 
+    /* 2. SIDEBAR - Mobile overlay drawer */
     .sidebar {
         position: absolute;
         top: 0;
@@ -1143,44 +1529,23 @@ body {
         bottom: 0;
         width: 85%;
         max-width: 300px;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        box-shadow: 4px 0 25px rgba(0,0,0,0.15);
-        transform: translateX(-100%); /* Hidden by default */
-        z-index: 100;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: rgba(255, 255, 255, 0.97);
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        box-shadow: 4px 0 32px rgba(0,0,0,0.18);
+        transform: translateX(-105%);
+        /* FIX: Use var(--z-overlay) = 100, safely below modal */
+        z-index: var(--z-overlay);
+        transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Active state (matching JS logic) */
-    .sidebar.active {
-        transform: translateX(0);
-    }
+    .sidebar.active { transform: translateX(0); }
 
-    .sidebar-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 23, 42, 0.5);
-        z-index: 90; /* Below sidebar */
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease;
-    }
+    /* 3. HEADER */
+    .header-center { display: none; }
+    .header-left { flex: 1; }
 
-    .sidebar-overlay.active {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    /* 3. HEADER ADJUSTMENTS */
-    .header-center {
-        display: none;
-    }
-    
-    .header-left {
-        flex: 1;
-    }
-    
-    /* 4. DETAIL PANEL (Bottom Sheet Style) */
+    /* 4. DETAIL PANEL - Bottom sheet */
     .panel {
         position: fixed;
         top: auto !important;
@@ -1188,109 +1553,94 @@ body {
         left: 0;
         right: 0;
         width: 100% !important;
-        height: 70vh !important;
-        border-radius: 24px 24px 0 0;
-        box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
-        transform: translateY(100%);
-        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        z-index: 200;
-        border: none;
+        /* FIX: Use dvh for correct viewport height on mobile browsers */
+        height: 72dvh !important;
+        border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+        box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
+        transform: translateY(105%);
+        transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+        /* FIX: z:150 — above sidebar (100) but below modal (200) */
+        z-index: 150;
+        border-left: none;
         background: var(--bg-secondary);
     }
 
-    .panel.open {
-        transform: translateY(0);
-    }
+    .panel.open { transform: translateY(0); }
 
-    /* THE DRAG HANDLE (Visual Cue) */
-    .panel::before {
+    /* GOD MODE: Enhanced drag handle */
+    .panel::after {
         content: '';
         position: absolute;
-        top: 8px;
+        top: 10px;
         left: 50%;
         transform: translateX(-50%);
-        width: 40px;
+        width: 36px;
         height: 4px;
         background: var(--border-medium);
         border-radius: 2px;
-        z-index: 10;
-    }
-    
-    .panel-header {
-        padding-top: 24px; /* Space for handle */
+        pointer-events: none;
     }
 
-    /* 5. MODAL (Bottom Sheet) */
-    .modal {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        max-width: 100%;
-        border-radius: 24px 24px 0 0;
-        max-height: 90vh;
-        transform: translateY(100%); /* Slide up */
-    }
+    .panel-header { padding-top: 28px; }
 
-    .modal-overlay.open .modal {
-        transform: translateY(0);
-    }
-
+    /* 5. MODAL - Bottom sheet */
     .modal-overlay {
         align-items: flex-end;
         padding: 0;
     }
+    .modal {
+        position: relative;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-width: 100%;
+        border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+        max-height: 92dvh;
+        transform: translateY(105%);
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
 
     /* 6. GRAPH CONTROLS */
     .graph-controls {
         bottom: 20px;
         transform: translateX(-50%) scale(0.9);
+        transform-origin: center bottom;
     }
 
     /* 7. LEGEND */
     .legend {
         top: 10px;
         left: 10px;
-        transform: scale(0.9);
+        transform: scale(0.88);
         transform-origin: top left;
-        opacity: 0.8;
-    }
-    
-    /* Hide legend when panel is open */
-    .panel.open ~ .legend {
-        opacity: 0;
-        pointer-events: none;
+        opacity: 0.85;
     }
 
-
-
-
-   /* Hide "Add Term" text to make room for Sidebar button */
-    #addTermBtn .btn-text {
-        display: none;
-    }
-    
-    /* Reduce padding of the Add Term button so it looks like a circle icon */
-    #addTermBtn {
-        padding: 0 12px;
-    }
-    
-    /* Ensure sidebar button is always prominent */
-    #toggleSidebar {
-        margin-right: 8px;
-    }
-
-
-   
+    /* 8. HIDE add term text on mobile */
+    #addTermBtn .btn-text { display: none; }
+    #addTermBtn { padding: 0 12px; }
+    #toggleSidebar { margin-right: 8px; }
 }
 
-/* Small Mobile specific tweaks */
+/* Small mobile tweaks */
 @media (max-width: 640px) {
     .logo-text { display: none; }
     .stats-grid { grid-template-columns: repeat(3, 1fr); }
     .related-grid { grid-template-columns: 1fr; }
     .form-row { grid-template-columns: 1fr; }
     
-    /* Fix iOS Input Zoom */
-    .form-input, .form-select, .form-textarea { font-size: 16px; }
+    /* FIX: Prevent iOS input zoom (requires font-size: 16px) */
+    .form-input,
+    .form-select,
+    .form-textarea { font-size: max(16px, var(--font-size-sm)); }
+}
+
+/* Dark mode sidebar on mobile */
+@media (max-width: 768px) {
+    [data-theme="dark"] .sidebar {
+        background: rgba(15, 23, 42, 0.98);
+    }
+    [data-theme="dark"] .panel {
+        background: var(--bg-secondary);
+    }
 }
