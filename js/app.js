@@ -1,5 +1,6 @@
 /**
- * AI Knowledge Nexus - Main Application (POWERED UP)
+ * AI Knowledge Nexus - Main Application
+ * Production-grade rewrite with defensive engineering, memory safety, and UX polish.
  */
 
 class App {
@@ -9,288 +10,359 @@ class App {
             searchQuery: '',
             selectedCategory: null,
             selectedTerm: null,
-            // PowerUp: Navigation History
             history: [],
-            historyIndex: -1
+            historyIndex: -1,
+            isFullscreen: false,
         };
         this.initialized = false;
-        
-        this.init(); 
+
+        // Store bound listener references so they can be removed cleanly
+        this._listeners = [];
+        // Track pending timers for cleanup
+        this._timers = [];
+
+        this.init();
     }
-    
+
     async init() {
-        // 1. Wait for the data to load first!
-        if (window.dataLoadPromise) {
-            await window.dataLoadPromise;
-        } else {
-            console.error("dataLoadPromise not found. Is data.js loaded?");
-            return;
-        }
+        try {
+            if (window.dataLoadPromise) {
+                await window.dataLoadPromise;
+            } else {
+                throw new Error('dataLoadPromise not found. Is data.js loaded?');
+            }
 
-        // 2. Check if data actually loaded
-        if (!KnowledgeBase.isLoaded) {
-            console.error("Data failed to load. Check console for CORS or JSON errors.");
-            // Optional: Show a friendly error to the user on the page
-            document.body.innerHTML = '<div style="color:red;padding:20px;text-align:center;">Failed to load knowledge data. Please run this project using a local server (e.g., "Live Server" in VS Code).</div>';
-            return;
-        }
+            if (!KnowledgeBase?.isLoaded) {
+                throw new Error('Data failed to load. Check console for CORS or JSON errors.');
+            }
 
-        // 3. Proceed with DOM readiness
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.setup());
-        } else {
-            this.setup();
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => this.setup());
+            } else {
+                this.setup();
+            }
+        } catch (err) {
+            console.error('[App.init]', err.message);
+            this._showFatalError(err.message);
         }
     }
-    
+
+    /**
+     * Renders a user-visible fatal error and aborts setup.
+     * @param {string} message
+     */
+    _showFatalError(message) {
+        const safe = String(message)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        document.body.innerHTML = `
+            <div style="
+                display:flex;align-items:center;justify-content:center;
+                height:100vh;font-family:system-ui,sans-serif;
+                background:#0f172a;color:#f87171;text-align:center;padding:24px;">
+                <div>
+                    <div style="font-size:2rem;margin-bottom:12px;">⚠️</div>
+                    <strong>Failed to initialise.</strong><br>
+                    <span style="color:#94a3b8;font-size:0.875rem;">${safe}</span><br>
+                    <span style="color:#64748b;font-size:0.8rem;margin-top:8px;display:block;">
+                        Tip: serve this project via a local dev server (e.g. VS Code Live Server).
+                    </span>
+                </div>
+            </div>`;
+    }
+
     setup() {
-        console.log('Setting up app...');
-        
+        console.log('[App] Setting up…');
+
         try {
-            if (!window.KnowledgeBase) { console.error('KnowledgeBase not loaded'); return; }
-            if (!window.KnowledgeGraph) { console.error('KnowledgeGraph not loaded'); return; }
-            if (!window.KnowledgeUtils) { console.error('KnowledgeUtils not loaded'); return; }
-            
-            // Initialize graph
+            const required = ['KnowledgeBase', 'KnowledgeGraph', 'KnowledgeUtils'];
+            for (const dep of required) {
+                if (!window[dep]) throw new Error(`${dep} is not loaded.`);
+            }
+
+            // Initialise graph
             this.graph = new KnowledgeGraph('graphCanvas');
             this.graph.loadData();
-            
-            // Set callbacks
-            this.graph.onNodeSelect = (term) => this.navigateTerm(term); // Changed to navigateTerm
+
+            // Wire graph callbacks (always check term exists first)
+            this.graph.onNodeSelect = (term) => { if (term) this.navigateTerm(term); };
             this.graph.onHoverChange = (node, e) => this.handleHover(node, e);
-            
-            // Render UI
+
+            // Build UI
             this.renderCategories();
             this.renderLegend();
             this.updateStats();
             this.populateCategorySelect();
-            
-            // Bind events
+
+            // Bind all DOM events
             this.bindEvents();
-            
-            // PowerUp: Handle Deep Linking on start
+
+            // Handle deep-link URL on first load
             this.handleInitialRoute();
-            
+
+            // Visitor counter (FIXED: was incorrectly inside catch block)
+            updateVisitorCount();
+
+            // Resize graph when window changes
+            this._addResizeObserver();
+
             this.initialized = true;
-            console.log('App initialized successfully. Press "/" to search, "F" for fullscreen.');
-            
-        } catch (error) {
-            console.error("CRITICAL ERROR IN SETUP:", error);
-        
-        // Visitor counter
-        updateVisitorCount();
+            console.log('[App] Ready. Shortcuts: "/" = search, "F" = fullscreen, Alt+←/→ = history.');
+
+        } catch (err) {
+            console.error('[App.setup] Critical error:', err);
         }
     }
 
-    // PowerUp: Debounce helper for performance
+    // ==========================================
+    // UTILITY
+    // ==========================================
+
+    /**
+     * Debounce helper – returns a function that delays invoking `func` by `wait` ms.
+     * @param {Function} func
+     * @param {number} wait
+     * @returns {Function}
+     */
     debounce(func, wait) {
         let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
+        return (...args) => {
             clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
+            timeout = setTimeout(() => func.apply(this, args), wait);
         };
     }
-    
+
+    /**
+     * Register an event listener AND track it for later cleanup.
+     * @param {EventTarget} target
+     * @param {string} type
+     * @param {Function} handler
+     * @param {object} [options]
+     */
+    _on(target, type, handler, options) {
+        if (!target) return;
+        target.addEventListener(type, handler, options);
+        this._listeners.push({ target, type, handler, options });
+    }
+
+    /**
+     * Tear down all registered listeners (useful for SPA navigations / hot-reload).
+     */
+    destroy() {
+        for (const { target, type, handler, options } of this._listeners) {
+            target.removeEventListener(type, handler, options);
+        }
+        this._listeners = [];
+        for (const id of this._timers) clearTimeout(id);
+        this._timers = [];
+        if (this._resizeObserver) this._resizeObserver.disconnect();
+    }
+
+    /**
+     * Observe the canvas container so the graph re-fits on window / panel resize.
+     */
+    _addResizeObserver() {
+        const canvas = document.getElementById('graphCanvas');
+        if (!canvas || !window.ResizeObserver) return;
+
+        const debouncedResize = this.debounce(() => {
+            if (this.graph?.resize) this.graph.resize();
+        }, 200);
+
+        this._resizeObserver = new ResizeObserver(debouncedResize);
+        this._resizeObserver.observe(canvas.parentElement ?? canvas);
+    }
+
+    // ==========================================
+    // EVENT BINDING
+    // ==========================================
+
     bindEvents() {
-        // PowerUp: Debounced Search
         const searchInput = document.getElementById('searchInput');
+
+        // Debounced search – also clears highlights when query is empty
         if (searchInput) {
             const debouncedSearch = this.debounce((value) => {
                 this.state.searchQuery = value;
-                if (this.graph) this.graph.highlightNodes(value);
+                if (this.graph) this.graph.highlightNodes(value || null);
             }, 150);
-            
-            searchInput.addEventListener('input', (e) => {
-                debouncedSearch(e.target.value);
-            });
+
+            this._on(searchInput, 'input', (e) => debouncedSearch(e.target.value));
         }
-        
-        // PowerUp: Enhanced Keyboard Shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Focus Search (/)
-            if (e.key === '/' && document.activeElement !== searchInput) {
-                e.preventDefault();
-                if (searchInput) searchInput.focus();
-            }
-            
-            // Escape
-            if (e.key === 'Escape') {
-                this.closeDetailPanel();
-                this.closeModal();
-                if (searchInput) searchInput.blur();
-            }
-            
-            // PowerUp: Fullscreen (F)
-            if (e.key === 'f' || e.key === 'F') {
-                if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
-                    this.toggleFullscreen();
-                }
-            }
 
-            // PowerUp: History Navigation (Alt + Left/Right)
-            if (e.altKey) {
-                if (e.key === 'ArrowLeft') {
-                    e.preventDefault();
-                    this.goBack();
-                } else if (e.key === 'ArrowRight') {
-                    e.preventDefault();
-                    this.goForward();
-                }
+        // Global keyboard shortcuts
+        this._on(document, 'keydown', (e) => {
+            const active = document.activeElement;
+            const isTyping = active?.matches('input,textarea,[contenteditable]');
+
+            switch (e.key) {
+                case '/':
+                    if (!isTyping) {
+                        e.preventDefault();
+                        searchInput?.focus();
+                    }
+                    break;
+
+                case 'Escape':
+                    this.closeDetailPanel();
+                    this.closeModal();
+                    searchInput?.blur();
+                    break;
+
+                case 'f':
+                case 'F':
+                    if (!isTyping) this.toggleFullscreen();
+                    break;
+
+                case 'ArrowLeft':
+                    if (e.altKey) { e.preventDefault(); this.goBack(); }
+                    break;
+
+                case 'ArrowRight':
+                    if (e.altKey) { e.preventDefault(); this.goForward(); }
+                    break;
             }
         });
-        
-        // PowerUp: Listen for URL hash changes (Back/Forward button in browser)
-        window.addEventListener('hashchange', () => {
-            this.handleRouteChange();
+
+        // Browser back / forward button support
+        this._on(window, 'hashchange', () => this.handleRouteChange());
+
+        // Fullscreen state tracking
+        this._on(document, 'fullscreenchange', () => {
+            this.state.isFullscreen = !!document.fullscreenElement;
         });
 
-
-        // Sidebar toggle
+        // ---- Sidebar ----
         const toggleBtn = document.getElementById('toggleSidebar');
-        const overlay = document.getElementById('sidebarOverlay'); // Get the new overlay div
-    
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                const sidebar = document.getElementById('sidebar');
-                
-                // Check if we are in mobile view (Match CSS @media max-width: 768px)
+        const overlay = document.getElementById('sidebarOverlay');
+        const sidebar = document.getElementById('sidebar');
+
+        if (toggleBtn && sidebar) {
+            this._on(toggleBtn, 'click', () => {
                 if (window.innerWidth < 768) {
-                    // Mobile: Slide in/out using 'active' class
                     sidebar.classList.toggle('active');
-                    if (overlay) overlay.classList.toggle('active');
+                    overlay?.classList.toggle('active');
                 } else {
-                    // Desktop: Collapse/Expand logic (keep your existing desktop logic)
                     sidebar.classList.toggle('collapsed');
                 }
             });
         }
-    
-        // ADDED THIS: Close sidebar when clicking the dark overlay
-        if (overlay) {
-            overlay.addEventListener('click', () => {
-                const sidebar = document.getElementById('sidebar');
+
+        if (overlay && sidebar) {
+            this._on(overlay, 'click', () => {
                 sidebar.classList.remove('active');
                 overlay.classList.remove('active');
             });
         }
 
-        // ... sidebar toggle logic fixed above ...
-
-
-        // ==========================================
-        // ARCHITECTURE NAVIGATION LOGIC
-        // ==========================================
-        
+        // ---- Architecture button ----
         const archBtn = document.getElementById('navArchitecture');
         if (archBtn) {
-            archBtn.addEventListener('click', async () => { // Added 'async' here
-                // 1. Ensure window.archManager exists
+            this._on(archBtn, 'click', async () => {
                 if (window.archManager) {
-                    // 2. 'await' is crucial here to let data load before showing
                     await window.archManager.showVisual(null);
                 } else {
-                    console.error("Architecture Manager not found. Is architecture.js loaded?");
+                    console.warn('[App] archManager not found – is architecture.js loaded?');
+                    this.showToast('Architecture view unavailable.', 'error');
                 }
             });
         }
-        
-        // Category list
+
+        // ---- Category list ----
         const categoryList = document.getElementById('categoryList');
         if (categoryList) {
-            categoryList.addEventListener('click', (e) => {
+            this._on(categoryList, 'click', (e) => {
                 const item = e.target.closest('.category-item');
                 if (!item) return;
-                
+
                 document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
-                
+
                 const categoryId = item.dataset.category;
                 if (this.state.selectedCategory === categoryId) {
                     this.state.selectedCategory = null;
-                    if (this.graph) this.graph.filterByCategory(null);
+                    this.graph?.filterByCategory(null);
                 } else {
                     item.classList.add('active');
                     this.state.selectedCategory = categoryId;
-                    if (this.graph) this.graph.filterByCategory(categoryId);
+                    this.graph?.filterByCategory(categoryId);
                 }
             });
         }
-        
-        // Filters
+
+        // ---- Type filters ----
         const filterList = document.getElementById('filterList');
         if (filterList) {
-            filterList.addEventListener('click', (e) => {
+            this._on(filterList, 'click', (e) => {
                 const item = e.target.closest('.filter-item');
-                if (!item) return;
-                
+                if (!item || !this.graph) return;
+
                 document.querySelectorAll('.filter-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
-                
+
                 const filter = item.dataset.filter;
-                if (this.graph) {
-                    if (filter === 'all') {
-                        this.state.selectedCategory = null;
-                        this.graph.nodes.forEach(n => n.visible = true);
-                    } else {
-                        this.graph.nodes.forEach(n => n.visible = n.term.type === filter);
-                    }
-                }
+                this.graph.nodes.forEach(n => {
+                    n.visible = filter === 'all' ? true : n.term.type === filter;
+                });
+
+                if (filter === 'all') this.state.selectedCategory = null;
             });
         }
-        
-        // Graph controls
-        const zoomIn = document.getElementById('zoomIn');
-        const zoomOut = document.getElementById('zoomOut');
-        const resetView = document.getElementById('resetView');
-        
-        if (zoomIn) zoomIn.addEventListener('click', () => this.graph && this.graph.zoomIn());
-        if (zoomOut) zoomOut.addEventListener('click', () => this.graph && this.graph.zoomOut());
-        if (resetView) resetView.addEventListener('click', () => this.graph && this.graph.resetView());
-        
-        // Detail panel
-        const closePanel = document.getElementById('closePanel');
-        if (closePanel) {
-            closePanel.addEventListener('click', () => this.closeDetailPanel());
-        }
-        
-        // Related terms
-        const relatedTerms = document.getElementById('relatedTerms');
+
+        // ---- Graph controls ----
+        const $el = (id) => document.getElementById(id);
+        const safeCall = (id, fn) => {
+            const el = $el(id);
+            if (el) this._on(el, 'click', fn);
+        };
+
+        safeCall('zoomIn',    () => this.graph?.zoomIn());
+        safeCall('zoomOut',   () => this.graph?.zoomOut());
+        safeCall('resetView', () => this.graph?.resetView());
+
+        // ---- Detail panel ----
+        const closePanel = $el('closePanel');
+        if (closePanel) this._on(closePanel, 'click', () => this.closeDetailPanel());
+
+        // ---- Related terms (event delegation) ----
+        const relatedTerms = $el('relatedTerms');
         if (relatedTerms) {
-            relatedTerms.addEventListener('click', (e) => {
+            this._on(relatedTerms, 'click', (e) => {
                 const item = e.target.closest('.related-item');
                 if (!item) return;
-                
+
                 const termId = item.dataset.termId;
                 const term = KnowledgeUtils.getTerm(termId);
-                if (term) {
-                    this.navigateTerm(term);
-                    if (this.graph) this.graph.selectedNode = this.graph.findNode(termId);
+                if (!term) {
+                    console.warn(`[App] Related term "${termId}" not found in KnowledgeBase.`);
+                    return;
                 }
+
+                this.navigateTerm(term);
+                if (this.graph) this.graph.selectedNode = this.graph.findNode(termId);
             });
         }
-        
-        // Add term modal
-        const addTermBtn = document.getElementById('addTermBtn');
-        const closeModalBtn = document.getElementById('closeModal');
-        const cancelAdd = document.getElementById('cancelAdd');
-        const addModal = document.getElementById('addModal');
-        
-        if (addTermBtn) addTermBtn.addEventListener('click', () => this.openModal());
-        if (closeModalBtn) closeModalBtn.addEventListener('click', () => this.closeModal());
-        if (cancelAdd) cancelAdd.addEventListener('click', () => this.closeModal());
+
+        // ---- Add-term modal ----
+        const addTermBtn  = $el('addTermBtn');
+        const closeModal  = $el('closeModal');
+        const cancelAdd   = $el('cancelAdd');
+        const addModal    = $el('addModal');
+        const addTermForm = $el('addTermForm');
+
+        if (addTermBtn)  this._on(addTermBtn,  'click', () => this.openModal());
+        if (closeModal)  this._on(closeModal,  'click', () => this.closeModal());
+        if (cancelAdd)   this._on(cancelAdd,   'click', () => this.closeModal());
+
+        // Close modal on backdrop click
         if (addModal) {
-            addModal.addEventListener('click', (e) => {
-                if (e.target.id === 'addModal') this.closeModal();
+            this._on(addModal, 'click', (e) => {
+                if (e.target === addModal) this.closeModal();
             });
         }
-        
-        // Add term form
-        const addTermForm = document.getElementById('addTermForm');
+
         if (addTermForm) {
-            addTermForm.addEventListener('submit', (e) => {
+            this._on(addTermForm, 'submit', (e) => {
                 e.preventDefault();
                 this.handleAddTerm(new FormData(e.target));
             });
@@ -298,84 +370,93 @@ class App {
     }
 
     // ==========================================
-    // POWERUP: ROUTING & HISTORY
+    // ROUTING & HISTORY
     // ==========================================
 
     handleInitialRoute() {
         const hash = window.location.hash.slice(1);
-        if (hash) {
-            const term = KnowledgeUtils.getTerm(hash);
-            if (term) {
-                this.showTermDetail(term, false); // false = don't push to history yet
-                if (this.graph) {
-                    this.graph.selectedNode = this.graph.findNode(hash);
-                }
-            }
+        if (!hash) return;
+
+        const term = KnowledgeUtils.getTerm(hash);
+        if (term) {
+            this.showTermDetail(term, false);
+            if (this.graph) this.graph.selectedNode = this.graph.findNode(hash);
+        } else {
+            console.warn(`[App] Deep-link term "${hash}" not found.`);
         }
     }
 
     handleRouteChange() {
         const hash = window.location.hash.slice(1);
-        // If hash is empty, close panel
         if (!hash) {
-            this.closeDetailPanel(false);
-        } else {
-            // Only update if it's different from current selection to avoid loops
-            if (!this.state.selectedTerm || this.state.selectedTerm.id !== hash) {
-                const term = KnowledgeUtils.getTerm(hash);
-                if (term) {
-                    this.showTermDetail(term, false);
-                }
-            }
+            // Only close if we're not already mid-navigation (prevents loop)
+            if (this.state.selectedTerm) this.closeDetailPanel(false);
+            return;
         }
+
+        // Avoid re-rendering the same term (breaks loops from goBack / goForward)
+        if (this.state.selectedTerm?.id === hash) return;
+
+        const term = KnowledgeUtils.getTerm(hash);
+        if (term) this.showTermDetail(term, false);
     }
 
     navigateTerm(term) {
-        if (!term) return;
-        
-        // Push to history stack
-        // Remove future history if we navigated back and then clicked a new node
+        if (!term?.id) return;
+
+        // Truncate forward history when branching
         if (this.state.historyIndex < this.state.history.length - 1) {
             this.state.history = this.state.history.slice(0, this.state.historyIndex + 1);
         }
-        
-        this.state.history.push(term.id);
-        this.state.historyIndex = this.state.history.length - 1;
+
+        // Avoid duplicate consecutive entries
+        if (this.state.history[this.state.historyIndex] !== term.id) {
+            this.state.history.push(term.id);
+            this.state.historyIndex = this.state.history.length - 1;
+        }
 
         this.showTermDetail(term, true);
     }
 
     goBack() {
-        if (this.state.historyIndex > 0) {
-            this.state.historyIndex--;
-            const termId = this.state.history[this.state.historyIndex];
-            const term = KnowledgeUtils.getTerm(termId);
-            if (term) {
-                this.showTermDetail(term, false); // Don't push
-                window.location.hash = term.id; // Update URL silently
-            }
-        }
+        if (this.state.historyIndex <= 0) return;
+        this._navigateHistory(this.state.historyIndex - 1);
     }
 
     goForward() {
-        if (this.state.historyIndex < this.state.history.length - 1) {
-            this.state.historyIndex++;
-            const termId = this.state.history[this.state.historyIndex];
-            const term = KnowledgeUtils.getTerm(termId);
-            if (term) {
-                this.showTermDetail(term, false); // Don't push
-                window.location.hash = term.id; // Update URL silently
-            }
+        if (this.state.historyIndex >= this.state.history.length - 1) return;
+        this._navigateHistory(this.state.historyIndex + 1);
+    }
+
+    /**
+     * Internal: move to a specific history index without adding a new entry.
+     * Uses replaceState instead of setting location.hash to avoid triggering
+     * the hashchange listener and creating a loop.
+     * @param {number} index
+     */
+    _navigateHistory(index) {
+        this.state.historyIndex = index;
+        const termId = this.state.history[index];
+        const term = KnowledgeUtils.getTerm(termId);
+        if (!term) return;
+
+        // replaceState so hashchange does NOT fire (prevents the feedback loop)
+        history.replaceState(null, '', `#${term.id}`);
+        this.showTermDetail(term, false);
+
+        if (this.graph) {
+            this.graph.selectedNode = this.graph.findNode(termId) ?? null;
         }
     }
 
     toggleFullscreen() {
         if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(err => {
-                console.log(`Error attempting to enable fullscreen: ${err.message}`);
+            document.documentElement.requestFullscreen().catch((err) => {
+                console.warn(`[App] Fullscreen request denied: ${err.message}`);
+                this.showToast('Fullscreen not available.', 'error');
             });
         } else {
-            document.exitFullscreen();
+            document.exitFullscreen?.();
         }
     }
 
@@ -386,165 +467,202 @@ class App {
     renderCategories() {
         const container = document.getElementById('categoryList');
         if (!container || !window.KnowledgeUtils) return;
-        
+
         const stats = KnowledgeUtils.getStats();
-        
+
         container.innerHTML = KnowledgeBase.categories.map(cat => `
-            <div class="category-item" data-category="${cat.id}">
-                <div class="category-dot" style="background: ${cat.color};"></div>
-                <span class="category-name">${cat.name}</span>
-                <span class="category-count">${stats.byCategory[cat.id] || 0}</span>
+            <div class="category-item" data-category="${this.escapeAttr(cat.id)}">
+                <div class="category-dot" style="background:${this.escapeAttr(cat.color)};"></div>
+                <span class="category-name">${this.escapeHTML(cat.name)}</span>
+                <span class="category-count">${stats.byCategory[cat.id] ?? 0}</span>
             </div>
         `).join('');
     }
-    
+
     renderLegend() {
         const container = document.getElementById('legendItems');
         if (!container || !window.KnowledgeBase) return;
-        
+
         container.innerHTML = KnowledgeBase.categories.map(cat => `
             <div class="legend-item">
-                <div class="legend-dot" style="background: ${cat.color};"></div>
-                <span>${cat.name}</span>
+                <div class="legend-dot" style="background:${this.escapeAttr(cat.color)};"></div>
+                <span>${this.escapeHTML(cat.name)}</span>
             </div>
         `).join('');
     }
-    
+
     updateStats() {
         if (!window.KnowledgeUtils) return;
-        
         const stats = KnowledgeUtils.getStats();
-        
-        const statCategories = document.getElementById('statCategories');
-        const statTerms = document.getElementById('statTerms');
-        const statConnections = document.getElementById('statConnections');
-        const totalCount = document.getElementById('totalCount');
-        
-        if (statCategories) statCategories.textContent = stats.categories;
-        if (statTerms) statTerms.textContent = stats.terms;
-        if (statConnections) statConnections.textContent = stats.connections;
-        if (totalCount) totalCount.textContent = stats.terms;
+
+        const set = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+        };
+
+        set('statCategories', stats.categories);
+        set('statTerms',      stats.terms);
+        set('statConnections', stats.connections);
+        set('totalCount',     stats.terms);
     }
-    
+
     populateCategorySelect() {
         const select = document.getElementById('categorySelect');
         if (!select || !window.KnowledgeBase) return;
-        
-        select.innerHTML = KnowledgeBase.categories.map(cat => 
-            `<option value="${cat.id}">${cat.name}</option>`
-        ).join('');
+
+        // Prepend a placeholder option for better UX
+        select.innerHTML =
+            `<option value="" disabled selected>Select a category…</option>` +
+            KnowledgeBase.categories
+                .map(cat => `<option value="${this.escapeAttr(cat.id)}">${this.escapeHTML(cat.name)}</option>`)
+                .join('');
     }
-    
+
     showTermDetail(term, pushState = true) {
         if (!term) return;
-        
+
         const panel = document.getElementById('detailPanel');
         if (!panel) return;
-        
+
         const category = KnowledgeBase.categories.find(c => c.id === term.category);
-        
+
         // Badge
         const badge = document.getElementById('panelBadge');
         if (badge) {
-            badge.textContent = category ? category.name : 'General';
-            badge.style.color = category ? category.color : '#6b7280';
-            badge.style.background = category ? category.color + '15' : '#f3f4f6';
+            badge.textContent = category?.name ?? 'General';
+            badge.style.color      = category?.color ?? '#6b7280';
+            badge.style.background = category ? `${category.color}15` : '#f3f4f6';
         }
-        
+
         // Title & subtitle
-        const title = document.getElementById('panelTitle');
+        const title    = document.getElementById('panelTitle');
         const subtitle = document.getElementById('panelSubtitle');
-        if (title) title.textContent = term.fullName || term.name;
-        if (subtitle) subtitle.textContent = term.shortDesc;
-        
-        // Definition
-        // Definition (Markdown Enabled)
+        if (title)    title.textContent    = term.fullName || term.name;
+        if (subtitle) subtitle.textContent = term.shortDesc ?? '';
+
+        // Definition (Markdown)
         const definition = document.getElementById('panelDefinition');
-        if (definition) {
-            definition.innerHTML = this.parseMarkdown(term.definition);
-        }
-        
+        if (definition) definition.innerHTML = this.parseMarkdown(term.definition ?? '');
+
         // Related terms
         const relatedContainer = document.getElementById('relatedTerms');
         if (relatedContainer) {
-            if (term.related && term.related.length > 0) {
-                relatedContainer.innerHTML = term.related.map(relId => {
-                    const relTerm = KnowledgeUtils.getTerm(relId);
-                    if (!relTerm) return '';
-                    const relCat = KnowledgeBase.categories.find(c => c.id === relTerm.category);
-                    return `
-                        <div class="related-item" data-term-id="${relId}">
-                            <div class="related-name">${relTerm.name}</div>
-                            <div class="related-type">${relCat ? relCat.name : 'General'}</div>
-                        </div>
-                    `;
-                }).filter(Boolean).join('') || '<p style="color:var(--text-muted);font-size:var(--font-size-sm);">No related terms found</p>';
-            } else {
-                relatedContainer.innerHTML = '<p style="color:var(--text-muted);font-size:var(--font-size-sm);">No related terms</p>';
-            }
+            const items = (term.related ?? []).map(relId => {
+                const relTerm = KnowledgeUtils.getTerm(relId);
+                if (!relTerm) return '';
+                const relCat = KnowledgeBase.categories.find(c => c.id === relTerm.category);
+                return `
+                    <div class="related-item" data-term-id="${this.escapeAttr(relId)}" role="button" tabindex="0"
+                         aria-label="Navigate to ${this.escapeAttr(relTerm.name)}">
+                        <div class="related-name">${this.escapeHTML(relTerm.name)}</div>
+                        <div class="related-type">${this.escapeHTML(relCat?.name ?? 'General')}</div>
+                    </div>`;
+            }).filter(Boolean).join('');
+
+            relatedContainer.innerHTML = items ||
+                '<p style="color:var(--text-muted);font-size:var(--font-size-sm);">No related terms</p>';
         }
-        
-        // Code
+
+        // Code example
         const codeContainer = document.getElementById('panelCode');
         if (codeContainer) {
-            codeContainer.textContent = term.codeExample || '// No code example available';
-            
-            // PowerUp: Inject Copy Button dynamically
+            codeContainer.textContent = term.codeExample ?? '// No code example available';
             this.injectCopyButton(codeContainer.parentElement);
         }
-        
+
         // Tags
         const tagContainer = document.getElementById('panelTags');
         if (tagContainer) {
-            tagContainer.innerHTML = term.tags.map(tag => 
-                `<span class="tag">${tag}</span>`
-            ).join('');
+            tagContainer.innerHTML = (term.tags ?? [])
+                .map(tag => `<span class="tag">${this.escapeHTML(tag)}</span>`)
+                .join('');
         }
-        
+
         panel.classList.add('open');
         this.state.selectedTerm = term;
 
-        // PowerUp: Update URL
+        // URL update
         if (pushState) {
-            window.location.hash = term.id;
+            // Use replaceState if same term, pushState if new
+            const current = window.location.hash.slice(1);
+            if (current !== term.id) {
+                history.pushState(null, '', `#${term.id}`);
+            }
+        }
+
+        // Announce for screen readers
+        panel.setAttribute('aria-label', `Detail: ${term.fullName || term.name}`);
+        // Move focus to panel title for accessibility
+        if (title) {
+            title.setAttribute('tabindex', '-1');
+            title.focus({ preventScroll: true });
         }
     }
-    
-    // PowerUp: Inject Copy Button
+
+    /**
+     * Inject or refresh the "Copy" button inside a code block container.
+     * Falls back to execCommand if clipboard API is unavailable (HTTP context).
+     * @param {HTMLElement|null} container
+     */
     injectCopyButton(container) {
         if (!container) return;
-        // Remove existing button if any
-        const existingBtn = container.querySelector('.copy-btn-dynamic');
-        if (existingBtn) existingBtn.remove();
+
+        const existing = container.querySelector('.copy-btn-dynamic');
+        if (existing) existing.remove();
 
         const btn = document.createElement('button');
         btn.className = 'copy-btn-dynamic';
         btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy code to clipboard');
         btn.style.cssText = `
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            padding: 4px 10px;
-            font-size: 11px;
-            font-family: var(--font-family);
-            background: rgba(255,255,255,0.1);
-            color: #cbd5e1;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
+            position:absolute;top:8px;right:8px;
+            padding:4px 10px;font-size:11px;
+            font-family:var(--font-family);
+            background:rgba(255,255,255,0.1);
+            color:#cbd5e1;
+            border:1px solid rgba(255,255,255,0.2);
+            border-radius:4px;cursor:pointer;
+            transition:background 0.2s,color 0.2s;
         `;
 
-        btn.onmouseenter = () => { btn.style.background = 'rgba(255,255,255,0.2)'; };
-        btn.onmouseleave = () => { btn.style.background = 'rgba(255,255,255,0.1)'; };
-        
-        btn.onclick = () => {
-            const code = container.querySelector('code').textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                btn.textContent = 'Copied!';
-                setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-            });
-        };
+        btn.addEventListener('mouseenter', () => { btn.style.background = 'rgba(255,255,255,0.2)'; });
+        btn.addEventListener('mouseleave', () => { btn.style.background = 'rgba(255,255,255,0.1)'; });
+
+        btn.addEventListener('click', async () => {
+            const codeEl = container.querySelector('code');
+            if (!codeEl) return;
+
+            const text = codeEl.textContent ?? '';
+
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    // Fallback for HTTP (non-secure) contexts
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.cssText = 'position:fixed;top:-999px;left:-999px;opacity:0;';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    ta.remove();
+                }
+
+                btn.textContent = '✓ Copied';
+                btn.style.color = '#4ade80';
+                const t = setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.style.color = '#cbd5e1';
+                }, 1500);
+                this._timers.push(t);
+
+            } catch (err) {
+                console.warn('[App] Copy failed:', err);
+                btn.textContent = 'Failed';
+                const t = setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+                this._timers.push(t);
+            }
+        });
 
         container.style.position = 'relative';
         container.appendChild(btn);
@@ -553,244 +671,313 @@ class App {
     closeDetailPanel(clearHash = true) {
         const panel = document.getElementById('detailPanel');
         if (panel) panel.classList.remove('open');
+
         this.state.selectedTerm = null;
         if (this.graph) this.graph.selectedNode = null;
-        
-        // PowerUp: Clear URL hash
+
         if (clearHash && window.location.hash) {
-            history.pushState("", document.title, window.location.pathname + window.location.search);
+            history.pushState('', document.title, window.location.pathname + window.location.search);
         }
     }
-    
+
     handleHover(node, e) {
         const tooltip = document.getElementById('tooltip');
         if (!tooltip) return;
-        
-        if (node) {
-            tooltip.innerHTML = `<strong>${node.term.name}</strong><br><span style="color:var(--text-muted);">${node.term.shortDesc}</span>`;
-            tooltip.style.left = (e.clientX + 12) + 'px';
-            tooltip.style.top = (e.clientY + 12) + 'px';
+
+        if (node?.term) {
+            tooltip.innerHTML =
+                `<strong>${this.escapeHTML(node.term.name)}</strong><br>
+                 <span style="color:var(--text-muted);">${this.escapeHTML(node.term.shortDesc ?? '')}</span>`;
+
+            // Clamp to viewport so tooltip never overflows
+            const tipW = 220; // approximate max width
+            const x = Math.min(e.clientX + 12, window.innerWidth - tipW - 8);
+            const y = e.clientY + 12;
+
+            tooltip.style.left = `${x}px`;
+            tooltip.style.top  = `${y}px`;
             tooltip.classList.add('visible');
         } else {
             tooltip.classList.remove('visible');
         }
     }
-    
+
     openModal() {
         const modal = document.getElementById('addModal');
-        if (modal) modal.classList.add('open');
+        if (modal) {
+            modal.classList.add('open');
+            // Focus first input for accessibility
+            const first = modal.querySelector('input,textarea,select');
+            first?.focus();
+        }
     }
-    
+
     closeModal() {
         const modal = document.getElementById('addModal');
-        const form = document.getElementById('addTermForm');
+        const form  = document.getElementById('addTermForm');
         if (modal) modal.classList.remove('open');
-        if (form) form.reset();
+        if (form)  form.reset();
     }
-    
+
     handleAddTerm(formData) {
-        const name = formData.get('name');
-        const categoryId = formData.get('category');
-        const shortDesc = formData.get('shortDesc');
-        const definition = formData.get('definition');
-        const relatedStr = formData.get('related') || '';
-        const tagsStr = formData.get('tags') || '';
-        
-        // Enhanced Validation
+        const name       = formData.get('name')?.trim()       ?? '';
+        const categoryId = formData.get('category')?.trim()   ?? '';
+        const shortDesc  = formData.get('shortDesc')?.trim()  ?? '';
+        const definition = formData.get('definition')?.trim() ?? '';
+        const relatedStr = formData.get('related')?.trim()    ?? '';
+        const tagsStr    = formData.get('tags')?.trim()       ?? '';
+
         if (!name || !categoryId || !shortDesc || !definition) {
-            this.showToast('Please fill all required fields', 'error');
+            this.showToast('Please fill all required fields.', 'error');
             return;
         }
-        
-        // Generate ID
-        const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        
-        // Parse arrays
-        const related = relatedStr.split(',').map(s => s.trim().toLowerCase().replace(/\s+/g, '-')).filter(Boolean);
+
+        if (name.length > 80) {
+            this.showToast('Name is too long (max 80 characters).', 'error');
+            return;
+        }
+
+        // Generate stable, collision-resistant ID
+        const baseId = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        if (!baseId) {
+            this.showToast('Could not generate a valid ID from that name.', 'error');
+            return;
+        }
+
+        // Suffix if ID already exists
+        let id = baseId;
+        let suffix = 1;
+        while (KnowledgeUtils.getTerm(id)) {
+            id = `${baseId}-${++suffix}`;
+        }
+
+        const related = relatedStr
+            .split(',')
+            .map(s => s.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))
+            .filter(Boolean);
+
         const tags = tagsStr.split(',').map(s => s.trim()).filter(Boolean);
-        
-        // Add term
+
         const success = KnowledgeUtils.addTerm({
-            id,
-            name,
-            category: categoryId,
+            id, name, category: categoryId,
             type: 'technique',
-            shortDesc,
-            definition,
-            related,
-            tags
+            shortDesc, definition, related, tags
         });
-        
+
         if (success) {
-            if (this.graph) this.graph.loadData();
+            this.graph?.loadData();
             this.updateStats();
             this.renderCategories();
             this.closeModal();
-            
+
             const newTerm = KnowledgeUtils.getTerm(id);
             if (newTerm) {
-                setTimeout(() => this.navigateTerm(newTerm), 100);
-                this.showToast(`Term "${name}" added!`, 'success');
+                const t = setTimeout(() => this.navigateTerm(newTerm), 100);
+                this._timers.push(t);
+                this.showToast(`"${name}" added successfully!`, 'success');
             }
         } else {
             this.showToast('Failed to add term. It may already exist.', 'error');
         }
     }
 
-    // PowerUp: Simple Toast Notification System
+    // ==========================================
+    // TOAST NOTIFICATIONS
+    // ==========================================
+
+    /**
+     * Shows a non-blocking toast message.
+     * @param {string} message
+     * @param {'info'|'success'|'error'} type
+     */
     showToast(message, type = 'info') {
-        // Remove existing toast
         const existing = document.querySelector('.app-toast');
         if (existing) existing.remove();
 
-        const toast = document.createElement('div');
-        toast.className = 'app-toast';
-        toast.textContent = message;
-        
-        const bgColor = type === 'success' ? 'var(--accent-success)' : 
-                        type === 'error' ? 'var(--accent-danger)' : 'var(--text-primary)';
+        const bgMap = {
+            success: 'var(--accent-success, #22c55e)',
+            error:   'var(--accent-danger, #ef4444)',
+            info:    'var(--text-primary, #1e293b)',
+        };
 
+        const toast = document.createElement('div');
+        toast.className  = 'app-toast';
+        toast.textContent = message;
+        toast.setAttribute('role', 'status');      // screen reader live region
+        toast.setAttribute('aria-live', 'polite');
         toast.style.cssText = `
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            padding: 12px 24px;
-            background: ${bgColor};
-            color: white;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 500;
-            z-index: 5000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position:fixed;bottom:24px;left:50%;
+            transform:translateX(-50%) translateY(20px);
+            padding:12px 24px;
+            background:${bgMap[type] ?? bgMap.info};
+            color:#fff;border-radius:8px;
+            font-size:13px;font-weight:500;
+            z-index:5000;
+            box-shadow:0 4px 12px rgba(0,0,0,0.15);
+            opacity:0;pointer-events:none;
+            transition:opacity 0.3s cubic-bezier(0.4,0,0.2,1),
+                        transform 0.3s cubic-bezier(0.4,0,0.2,1);
         `;
 
         document.body.appendChild(toast);
 
-        // Trigger animation
-        requestAnimationFrame(() => {
-            toast.style.opacity = '1';
-            toast.style.transform = 'translateX(-50%) translateY(0)';
-        });
+        // Force reflow then animate in
+        void toast.offsetWidth;
+        toast.style.opacity   = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
 
-        // Auto remove
-        setTimeout(() => {
-            toast.style.opacity = '0';
+        const t = setTimeout(() => {
+            toast.style.opacity   = '0';
             toast.style.transform = 'translateX(-50%) translateY(20px)';
-            setTimeout(() => toast.remove(), 300);
+            const t2 = setTimeout(() => toast.remove(), 320);
+            this._timers.push(t2);
         }, 3000);
+        this._timers.push(t);
     }
-    
-    
-    
-    
-    
+
+    // ==========================================
+    // STRING UTILITIES
+    // ==========================================
+
+    /**
+     * Escapes a string for safe injection into HTML text nodes.
+     * @param {string} text
+     * @returns {string}
+     */
     escapeHTML(text) {
-        return text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
+        return String(text ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
-    
+
+    /**
+     * Escapes a string for safe injection into HTML attribute values.
+     * @param {string} text
+     * @returns {string}
+     */
+    escapeAttr(text) {
+        return String(text ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    /**
+     * Lightweight Markdown → HTML renderer.
+     * Operates on pre-escaped text to prevent XSS.
+     * @param {string} text  Raw markdown string
+     * @returns {string}     Safe HTML string
+     */
     parseMarkdown(text) {
         if (!text) return '';
-    
-        text = this.escapeHTML(text);
-    
-        // ---- CODE BLOCKS (handle first to prevent corruption) ----
-        text = text.replace(/```([\s\S]*?)```/g, (match, p1) => {
-            return `<pre><code>${p1.trim()}</code></pre>`;
-        });
-    
-        // ---- INLINE CODE ----
-        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-    
-        // ---- BOLD ----
-        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
-        // ---- HEADINGS (optional enhancement) ----
-        text = text.replace(/^### (.*$)/gm, '<h4>$1</h4>');
-        text = text.replace(/^## (.*$)/gm, '<h3>$1</h3>');
-        text = text.replace(/^# (.*$)/gm, '<h2>$1</h2>');
-    
-        // ---- BULLET LISTS (group properly) ----
-        text = text.replace(/(?:^- .+\n?)+/gm, (match) => {
-            const items = match.trim().split('\n')
-                .map(line => line.replace(/^- /, '').trim())
-                .map(item => `<li>${item}</li>`)
+
+        // 1. Escape HTML entities first to prevent injection
+        let out = this.escapeHTML(text);
+
+        // 2. Fenced code blocks  ```…```  (capture before inline rules corrupt them)
+        out = out.replace(/```([\s\S]*?)```/g, (_, code) =>
+            `<pre><code>${code.trim()}</code></pre>`
+        );
+
+        // 3. Inline code  `…`
+        out = out.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+
+        // 4. Bold  **…**
+        out = out.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+        // 5. Italic  *…*  (after bold so **…** is matched first)
+        out = out.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+
+        // 6. Headings (only at line start)
+        out = out.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+        out = out.replace(/^## (.+)$/gm,  '<h3>$1</h3>');
+        out = out.replace(/^# (.+)$/gm,   '<h2>$1</h2>');
+
+        // 7. Bullet lists  (group consecutive lines into <ul>)
+        out = out.replace(/(?:^- .+\n?)+/gm, (block) => {
+            const items = block.trim().split('\n')
+                .map(l => `<li>${l.replace(/^- /, '').trim()}</li>`)
                 .join('');
             return `<ul>${items}</ul>`;
         });
-    
-        // ---- NUMBERED LISTS (group properly) ----
-        text = text.replace(/(?:^\d+\. .+\n?)+/gm, (match) => {
-            const items = match.trim().split('\n')
-                .map(line => line.replace(/^\d+\. /, '').trim())
-                .map(item => `<li>${item}</li>`)
+
+        // 8. Ordered lists
+        out = out.replace(/(?:^\d+\. .+\n?)+/gm, (block) => {
+            const items = block.trim().split('\n')
+                .map(l => `<li>${l.replace(/^\d+\. /, '').trim()}</li>`)
                 .join('');
             return `<ol>${items}</ol>`;
         });
-    
-        // ---- PARAGRAPHS ----
-        text = text
-            .split(/\n\s*\n/)
+
+        // 9. Wrap remaining blocks in <p> tags (skip block-level elements)
+        const BLOCK_START = /^<(ul|ol|pre|h[1-6]|blockquote)/;
+        out = out
+            .split(/\n{2,}/)
             .map(block => {
-                if (
-                    block.startsWith('<ul>') ||
-                    block.startsWith('<ol>') ||
-                    block.startsWith('<pre>') ||
-                    block.startsWith('<h')
-                ) {
-                    return block;
-                }
-                return `<p>${block.trim()}</p>`;
+                const trimmed = block.trim();
+                if (!trimmed) return '';
+                if (BLOCK_START.test(trimmed)) return trimmed;
+                // Replace single newlines within a paragraph with <br>
+                return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
             })
+            .filter(Boolean)
             .join('');
-    
-        return text;
+
+        return out;
     }
 }
 
-//Initialise and expose to the window
+// Initialise and expose globally
 window.app = new App();
 
+// ==========================================
+// VISITOR COUNTER
+// Isolated from App class so it can run independently.
+// Includes a silent fallback if the API is unreachable.
+// ==========================================
+async function updateVisitorCount() {
+    const el = document.getElementById('visitorCount');
+    if (!el) return;
 
+    const NAMESPACE = 'titanml-ai-nexus';
+    const KEY       = 'visits';
+    const STORAGE_KEY = 'titanml_visited';
 
-async function updateVisitorCount(){
+    try {
+        const endpoint = localStorage.getItem(STORAGE_KEY)
+            ? `https://api.countapi.xyz/get/${NAMESPACE}/${KEY}`
+            : `https://api.countapi.xyz/hit/${NAMESPACE}/${KEY}`;
 
-const el = document.getElementById("visitorCount");
-if(!el) return;
+        // Abort if the API takes longer than 4 s
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
 
-const namespace = "titanml-ai-nexus";
-const key = "visits";
+        const res = await fetch(endpoint, { signal: controller.signal });
+        clearTimeout(timeout);
 
-try{
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-if(!localStorage.getItem("titanml_visited")){
+        const data = await res.json();
 
-const res = await fetch(`https://api.countapi.xyz/hit/${namespace}/${key}`);
-const data = await res.json();
+        if (typeof data.value === 'number') {
+            el.textContent = data.value.toLocaleString();
+            if (!localStorage.getItem(STORAGE_KEY)) {
+                localStorage.setItem(STORAGE_KEY, 'true');
+            }
+        }
 
-localStorage.setItem("titanml_visited","true");
-
-el.textContent = data.value.toLocaleString();
-
-}else{
-
-const res = await fetch(`https://api.countapi.xyz/get/${namespace}/${key}`);
-const data = await res.json();
-
-el.textContent = data.value.toLocaleString();
-
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            // Silently degrade – visitor count is non-critical
+            console.info('[VisitorCounter] Unavailable:', err.message);
+        }
+        el.textContent = '—';
+    }
 }
 
-}catch(err){
-console.error("Visitor counter error",err);
-el.textContent = "…";
-}
-
-}
-
-document.addEventListener("DOMContentLoaded", updateVisitorCount);
+document.addEventListener('DOMContentLoaded', updateVisitorCount);
