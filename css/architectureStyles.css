@@ -1,54 +1,151 @@
 /* ==========================================
-   ARCHITECTURE VISUALIZER — GOD MODE V3
+   ARCHITECTURE VISUALIZER — GOD MODE V4
    ==========================================
-   Fixes from V2:
-   1.  STRUCTURAL: .arch-gallery-wrapper separates header from grid
-   2.  Back button moved LEFT — conventional nav position
-   3.  --accent-warning-rgb defined in :root (was missing, used 6x)
-   4.  Diamond clip-path + box-shadow: switched to filter:drop-shadow
-   5.  Duplicate gradient border on viz-header removed — ::after only
-   6.  viz-header background set explicitly (gradient-border fill fix)
-   7.  loopSpin on inline ::after → display:inline-block added
-   8.  loopDash uses border-color opacity pulse (was SVG stroke-dashoffset)
-   9.  parallel-header: removed dead display:inline-block
-   10. connectorDraw: removed animation-delay:inherit (doesn't work on ::after)
-   11. Layout variables moved to :root for safe reuse outside #archView
-   12. flow-step-parallel missing stagger — nth-child delays added
-   13. Decision step connector gap fix — overrides connector bottom calc
-   14. Annotation connector translateX offset accounted for
-   15. arch-card transition extended to include background
+   Enhancements over V3:
+   1.  @property declarations for animatable gradient vars
+   2.  Richer layered grid background with radial vignette overlay
+   3.  Spine: multi-stop gradient + layered travel dot with comet tail
+   4.  Node boxes: deep glass layering, shimmer ::after, richer hover glow
+   5.  Connector: gradient line with mid-pulse dot + arrow refinement
+   6.  Gallery cards: prismatic top bar, inner glow, stagger entry animation
+   7.  Decision diamond: layered drop-shadow system, inner shine
+   8.  Parallel lanes: glass morphism refinement, lane title accent pip
+   9.  Annotation node: warm amber glass, dashed connector refinement
+   10. Loop indicator: dashed + arrow head treatment
+   11. Step types: richer semantic color systems per type
+   12. Typography: weight + tracking improvements across all labels
+   13. Dark mode: comprehensive obsidian overrides for all new surfaces
+   14. Mobile: refined bottom-sheet safe areas
    ========================================== */
 
 /* ==========================================
+   @PROPERTY — Animatable CSS custom properties
+   ========================================== */
+@property --spine-glow-opacity {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.2;
+}
+
+@property --card-shimmer {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: -120%;
+}
+
+/* ==========================================
    0. GLOBAL VARIABLES
-   FIX: Moved out of #archView to :root so they
-   work on .arch-gallery even if used standalone.
-   Added --accent-warning-rgb (was referenced but never defined).
    ========================================== */
 :root {
+    /* Layout */
     --arch-max-width: 960px;
     --arch-card-min: 300px;
 
+    /* Connectors */
     --connector-gap: 52px;
     --connector-width: 2px;
     --connector-color: var(--border-medium);
     --connector-arrow-size: 7px;
 
+    /* Nodes */
     --node-max-width: 620px;
-    --node-padding: 26px 34px;
-    --node-radius: 14px;
+    --node-padding: 28px 36px;
+    --node-radius: 16px;
 
+    /* Spine */
     --spine-width: 2px;
     --stagger-base: 80ms;
 
+    /* Branches */
     --branch-indent: 40px;
     --branch-line-offset: calc(var(--branch-indent) + 1px);
 
-    /* FIX: These were used with inline fallbacks only — now properly defined */
+    /* Semantic accent RGBs — fully defined */
     --accent-warning-rgb: 245, 158, 11;
     --accent-success-rgb: 16, 185, 129;
     --accent-danger-rgb: 239, 68, 68;
     --accent-secondary-rgb: 99, 102, 241;
+    --accent-primary-rgb: 8, 145, 178;
+    --accent-tertiary-rgb: 139, 92, 246;
+}
+
+/* ==========================================
+   KEYFRAMES — Centralized library
+   ========================================== */
+@keyframes archHeaderReveal {
+    from { opacity: 0; transform: translateY(-18px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nodeReveal {
+    from { opacity: 0; transform: translateY(28px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes connectorDraw {
+    from { transform: scaleY(0); opacity: 0; }
+    to   { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes spinePulse {
+    0%, 100% { opacity: 0.18; }
+    50%       { opacity: 0.5; }
+}
+
+@keyframes spineDotTravel {
+    0%   { top: 2%;  opacity: 0; transform: translateX(-50%) scale(0.5); }
+    6%   { opacity: 1; transform: translateX(-50%) scale(1); }
+    92%  { opacity: 1; transform: translateX(-50%) scale(1); }
+    100% { top: 97%; opacity: 0; transform: translateX(-50%) scale(0.5); }
+}
+
+@keyframes spineCometFade {
+    0%, 100% { height: 0; opacity: 0; }
+    10%, 85% { opacity: 1; }
+    50%      { height: 28px; }
+}
+
+@keyframes loopBorderPulse {
+    0%, 100% { border-color: rgba(var(--accent-secondary-rgb), 0.25); }
+    50%       { border-color: rgba(var(--accent-secondary-rgb), 0.6); }
+}
+
+@keyframes loopSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+@keyframes cardEntry {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes glowPulse {
+    0%, 100% { opacity: 0.4; }
+    50%       { opacity: 0.9; }
+}
+
+@keyframes connectorMidDot {
+    0%, 100% { opacity: 0.3; transform: translateX(-50%) scale(0.8); }
+    50%       { opacity: 1;   transform: translateX(-50%) scale(1.3); }
+}
+
+@keyframes decisionPulse {
+    0%, 100% {
+        filter:
+            drop-shadow(0 0 8px rgba(var(--accent-warning-rgb), 0.4))
+            drop-shadow(0 6px 20px rgba(var(--accent-warning-rgb), 0.15));
+    }
+    50% {
+        filter:
+            drop-shadow(0 0 16px rgba(var(--accent-warning-rgb), 0.65))
+            drop-shadow(0 10px 32px rgba(var(--accent-warning-rgb), 0.28));
+    }
+}
+
+@keyframes archBarSweep {
+    from { transform: scaleX(0); opacity: 0; }
+    to   { transform: scaleX(1); opacity: 1; }
 }
 
 /* ==========================================
@@ -66,35 +163,41 @@
     display: none;
     scroll-behavior: smooth;
 
+    /* Layered grid: major + minor lines + radial depth vignette */
     background-image:
-        linear-gradient(rgba(var(--accent-primary-rgb), 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(var(--accent-primary-rgb), 0.04) 1px, transparent 1px),
-        linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
-    background-size: 120px 120px, 120px 120px, 30px 30px, 30px 30px;
+        /* Radial vignette for depth */
+        radial-gradient(ellipse 90% 70% at 50% 50%, transparent 40%, rgba(0,0,0,0.025) 100%),
+        /* Major grid — accent tinted */
+        linear-gradient(rgba(var(--accent-primary-rgb), 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(var(--accent-primary-rgb), 0.045) 1px, transparent 1px),
+        /* Minor grid — neutral */
+        linear-gradient(rgba(0, 0, 0, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.018) 1px, transparent 1px);
+    background-size:
+        100% 100%,
+        120px 120px,
+        120px 120px,
+        30px 30px,
+        30px 30px;
+
+    /* Atmospheric top glow */
+    box-shadow: inset 0 0 120px rgba(var(--accent-primary-rgb), 0.03);
 }
 
-#archView::-webkit-scrollbar { width: 6px; }
+#archView::-webkit-scrollbar { width: 5px; }
 #archView::-webkit-scrollbar-track { background: transparent; }
 #archView::-webkit-scrollbar-thumb {
-    background: var(--border-medium);
-    border-radius: 6px;
+    background: linear-gradient(to bottom, var(--border-medium), var(--border-light));
+    border-radius: 9999px;
     background-clip: content-box;
 }
-#archView::-webkit-scrollbar-thumb:hover { background: var(--border-dark); }
+#archView::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, var(--border-dark), var(--border-medium));
+    background-clip: content-box;
+}
 
 /* ==========================================
    2. WRAPPERS
-   ==========================================
-   FIX — ROOT CAUSE OF "BACK BUTTON MESSING WITH LABELS":
-   Previously .arch-gallery was the CSS grid container AND held
-   .viz-header as a direct child — making the header a single
-   grid cell competing with cards for column space.
-
-   New structure:
-     .arch-gallery-wrapper  ← flex column, full-width container
-       ├── .viz-header       ← full-width, NOT a grid item
-       └── .arch-gallery     ← grid of cards only
    ========================================== */
 .arch-visualizer {
     width: 100%;
@@ -105,7 +208,7 @@
     align-items: center;
 }
 
-/* FIX: New wrapper holds header + gallery as separate children */
+/* Wrapper: full-width flex column, header + gallery as separate children */
 .arch-gallery-wrapper {
     width: 100%;
     max-width: var(--arch-max-width);
@@ -117,7 +220,7 @@
     margin: 0 auto;
 }
 
-/* FIX: Gallery is only the card grid — no header inside it */
+/* Gallery: card grid only — no header inside */
 .arch-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(var(--arch-card-min), 1fr));
@@ -127,17 +230,7 @@
 }
 
 /* ==========================================
-   3. VIZ HEADER
-   ==========================================
-   FIX 1: Back button on LEFT — conventional back nav.
-           flex-direction: row with button as first child.
-   FIX 2: Removed broken background-image gradient border.
-           .viz-header had no background, so the "fill" layer
-           of the double-background trick showed through as the
-           #archView grid pattern — visually broken.
-   FIX 3: Single ::after line only (reliable, no bg required).
-   FIX 4: viz-title-group gets flex:1 + min-width:0 so long
-           titles don't push the button off-screen.
+   3. VIZ HEADER — Dramatic reveal with gradient rule
    ========================================== */
 .viz-header {
     display: flex;
@@ -145,13 +238,13 @@
     align-items: center;
     gap: 16px;
     width: 100%;
-    margin-bottom: 40px;
-    padding-bottom: 24px;
+    margin-bottom: 44px;
+    padding-bottom: 26px;
     position: relative;
-    animation: archHeaderReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: archHeaderReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* FIX: ::after only — no duplicate background-image technique */
+/* Primary gradient separator line */
 .viz-header::after {
     content: '';
     position: absolute;
@@ -160,22 +253,34 @@
     background: linear-gradient(
         90deg,
         var(--accent-primary) 0%,
-        var(--accent-secondary) 45%,
-        transparent 75%
+        var(--accent-secondary) 40%,
+        rgba(var(--accent-tertiary-rgb), 0.4) 65%,
+        transparent 85%
     );
+    transform-origin: left center;
+    animation: archBarSweep 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
     pointer-events: none;
 }
 
-@keyframes archHeaderReveal {
-    from { opacity: 0; transform: translateY(-14px); }
-    to   { opacity: 1; transform: translateY(0); }
+/* Glow halo under the separator */
+.viz-header::before {
+    content: '';
+    position: absolute;
+    bottom: -3px; left: 0;
+    width: 60%; height: 6px;
+    background: radial-gradient(
+        ellipse at left,
+        rgba(var(--accent-primary-rgb), 0.18),
+        transparent 80%
+    );
+    pointer-events: none;
+    filter: blur(4px);
 }
 
-/* FIX: flex:1 + min-width:0 prevents long titles from overflowing */
 .viz-title-group {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
     flex: 1;
     min-width: 0;
 }
@@ -184,11 +289,16 @@
     font-size: var(--font-size-2xl);
     font-weight: 800;
     color: var(--text-primary);
-    letter-spacing: -0.03em;
-    line-height: 1.2;
+    letter-spacing: -0.035em;
+    line-height: 1.15;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    /* Subtle gradient on title text */
+    background: linear-gradient(135deg, var(--text-primary) 60%, var(--text-secondary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .viz-subtitle {
@@ -198,110 +308,160 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    letter-spacing: 0.01em;
 }
 
-/* FIX: No margin-left — uses gap from parent.
-   Naturally first in DOM order (left position in flex row). */
 .viz-back-btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     background: var(--bg-tertiary);
-    border: 1px solid var(--border-medium);
+    border: 1.5px solid var(--border-medium);
     color: var(--text-secondary);
     padding: 9px 18px;
-    border-radius: 20px;
+    border-radius: 9999px;
     font-size: var(--font-size-xs);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em;
     cursor: pointer;
-    transition: all var(--transition-base);
+    transition:
+        background var(--transition-base),
+        color var(--transition-base),
+        border-color var(--transition-base),
+        transform var(--transition-base),
+        box-shadow var(--transition-base);
     box-shadow: var(--shadow-sm);
     flex-shrink: 0;
     white-space: nowrap;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Shine sweep on back button */
+.viz-back-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 55%;
+    height: 100%;
+    background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.4) 50%, transparent 80%);
+    transform: skewX(-18deg);
+    pointer-events: none;
+}
+
+.viz-back-btn:hover::before {
+    animation: shimmerSweep 0.65s ease forwards;
+}
+
+@keyframes shimmerSweep {
+    to { left: 160%; }
 }
 
 .viz-back-btn:hover {
     background: var(--accent-primary);
     color: white;
     border-color: var(--accent-primary);
-    transform: translateX(-3px);
-    box-shadow: 0 4px 16px rgba(var(--accent-primary-rgb), 0.35);
+    transform: translateX(-4px);
+    box-shadow:
+        0 4px 18px rgba(var(--accent-primary-rgb), 0.38),
+        0 1px 4px rgba(0,0,0,0.08);
 }
 
-.viz-back-btn:active { transform: translateX(-1px) scale(0.98); }
+.viz-back-btn:active {
+    transform: translateX(-2px) scale(0.97);
+    box-shadow: 0 2px 8px rgba(var(--accent-primary-rgb), 0.25);
+}
 
 .viz-back-btn:focus-visible {
     outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
-    border-radius: 20px;
+    outline-offset: 3px;
+    border-radius: 9999px;
 }
 
 /* ==========================================
-   4. GALLERY CARDS
-   FIX: transition now includes `background`
-   so dark-mode hover doesn't snap the bg color.
+   4. GALLERY CARDS — Premium lift cards
    ========================================== */
 .arch-card {
     background: var(--bg-secondary);
-    border: 1px solid var(--border-light);
+    border: 1.5px solid var(--border-light);
     border-radius: var(--radius-xl);
-    padding: 26px;
+    padding: 28px;
     cursor: pointer;
-    /* FIX: background added to transition */
     transition:
-        transform 0.28s cubic-bezier(0.25, 1, 0.5, 1),
-        box-shadow 0.28s ease,
-        border-color 0.2s ease,
-        background 0.2s ease;
+        transform 0.30s cubic-bezier(0.25, 1, 0.5, 1),
+        box-shadow 0.30s ease,
+        border-color 0.22s ease,
+        background 0.22s ease;
     position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow-sm);
+    box-shadow:
+        var(--shadow-sm),
+        inset 0 1px 0 rgba(255,255,255,0.8);
     min-height: 200px;
     display: flex;
     flex-direction: column;
     align-self: stretch;
     outline: none;
+    /* Stagger entry */
+    opacity: 0;
+    animation: cardEntry 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.arch-card:nth-child(1) { animation-delay: 0.06s; }
+.arch-card:nth-child(2) { animation-delay: 0.12s; }
+.arch-card:nth-child(3) { animation-delay: 0.18s; }
+.arch-card:nth-child(4) { animation-delay: 0.24s; }
+.arch-card:nth-child(5) { animation-delay: 0.30s; }
+.arch-card:nth-child(6) { animation-delay: 0.36s; }
+.arch-card:nth-child(7) { animation-delay: 0.42s; }
+.arch-card:nth-child(8) { animation-delay: 0.48s; }
+
+/* Animated prismatic top bar */
 .arch-card::before {
     content: '';
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 3px;
-    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+    background: linear-gradient(
+        90deg,
+        var(--accent-primary) 0%,
+        var(--accent-secondary) 55%,
+        var(--accent-tertiary, var(--accent-secondary)) 100%
+    );
     transform: scaleX(0);
     transform-origin: left;
-    transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: transform 0.36s cubic-bezier(0.25, 1, 0.5, 1);
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     pointer-events: none;
 }
 
+/* Corner arrow badge */
 .arch-card::after {
     content: '';
     position: absolute;
-    top: 14px; right: 14px;
+    top: 16px; right: 16px;
     width: 16px; height: 16px;
-    border-top: 2px solid rgba(var(--accent-primary-rgb), 0.45);
-    border-right: 2px solid rgba(var(--accent-primary-rgb), 0.45);
+    border-top: 2px solid rgba(var(--accent-primary-rgb), 0.5);
+    border-right: 2px solid rgba(var(--accent-primary-rgb), 0.5);
     border-top-right-radius: 5px;
     opacity: 0;
-    transition: opacity 0.22s ease, transform 0.22s ease;
-    transform: scale(0.6) translate(3px, -3px);
+    transition: opacity 0.24s ease, transform 0.24s ease;
+    transform: scale(0.5) translate(4px, -4px);
     pointer-events: none;
 }
 
 .arch-card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(var(--accent-primary-rgb), 0.35);
+    transform: translateY(-8px);
+    border-color: rgba(var(--accent-primary-rgb), 0.32);
     background: var(--bg-secondary);
     box-shadow:
-        0 14px 36px rgba(var(--accent-primary-rgb), 0.14),
-        0 4px 8px rgba(0,0,0,0.05),
-        0 0 0 1px rgba(var(--accent-primary-rgb), 0.1);
+        0 20px 48px rgba(var(--accent-primary-rgb), 0.15),
+        0 8px 16px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(var(--accent-primary-rgb), 0.1),
+        inset 0 1px 0 rgba(255,255,255,0.9);
 }
 
 .arch-card:hover::before { transform: scaleX(1); }
@@ -309,45 +469,65 @@
 
 .arch-card:focus-visible {
     outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(var(--accent-primary-rgb), 0.15);
+    outline-offset: 3px;
+    box-shadow:
+        0 0 0 4px rgba(var(--accent-primary-rgb), 0.14),
+        var(--shadow-md);
 }
 
-.arch-card:active { transform: translateY(-2px); }
+.arch-card:active { transform: translateY(-3px); }
 
+/* Radial inner glow — revealed on hover */
 .arch-card-inner-glow {
     position: absolute;
     inset: 0;
     background: radial-gradient(
-        ellipse 70% 45% at 50% 0%,
-        rgba(var(--accent-primary-rgb), 0.045),
-        transparent 70%
+        ellipse 70% 50% at 50% 0%,
+        rgba(var(--accent-primary-rgb), 0.055),
+        transparent 75%
     );
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.35s ease;
+    border-radius: inherit;
 }
 .arch-card:hover .arch-card-inner-glow { opacity: 1; }
+
+/* Subtle bottom ambient glow */
+.arch-card-inner-glow::after {
+    content: '';
+    position: absolute;
+    bottom: -8px; left: 20%; right: 20%;
+    height: 20px;
+    background: radial-gradient(
+        ellipse,
+        rgba(var(--accent-primary-rgb), 0.1),
+        transparent 80%
+    );
+    filter: blur(6px);
+    pointer-events: none;
+}
 
 .arch-category {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     font-size: var(--font-size-xs);
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     color: var(--accent-primary);
     background: rgba(var(--accent-primary-rgb), 0.08);
-    padding: 4px 10px;
-    border-radius: 20px;
+    padding: 4px 11px;
+    border-radius: 9999px;
     margin-bottom: 14px;
     align-self: flex-start;
     border: 1px solid rgba(var(--accent-primary-rgb), 0.18);
-    transition: background var(--transition-fast);
+    transition: background var(--transition-fast), box-shadow var(--transition-fast);
 }
 .arch-card:hover .arch-category {
-    background: rgba(var(--accent-primary-rgb), 0.14);
+    background: rgba(var(--accent-primary-rgb), 0.13);
+    box-shadow: 0 0 12px rgba(var(--accent-primary-rgb), 0.1);
 }
 
 .arch-title {
@@ -355,14 +535,14 @@
     font-weight: 800;
     color: var(--text-primary);
     margin-bottom: 10px;
-    line-height: 1.3;
-    letter-spacing: -0.025em;
+    line-height: 1.25;
+    letter-spacing: -0.028em;
 }
 
 .arch-desc {
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
-    line-height: 1.65;
+    line-height: 1.7;
     margin-top: auto;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -375,20 +555,24 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 16px;
+    margin-top: 18px;
     padding-top: 14px;
     border-top: 1px solid var(--border-light);
     font-size: var(--font-size-xs);
     color: var(--text-muted);
-    font-weight: 500;
+    font-weight: 600;
+    letter-spacing: 0.02em;
 }
 
 .arch-card-meta-dot {
-    width: 6px; height: 6px;
+    width: 7px; height: 7px;
     border-radius: 50%;
     background: var(--accent-success);
-    box-shadow: 0 0 6px rgba(var(--accent-success-rgb), 0.7);
+    box-shadow:
+        0 0 0 3px rgba(var(--accent-success-rgb), 0.15),
+        0 0 8px rgba(var(--accent-success-rgb), 0.6);
     flex-shrink: 0;
+    animation: glowPulse 2.5s ease-in-out infinite;
 }
 
 /* ==========================================
@@ -400,10 +584,11 @@
     align-items: center;
     width: 100%;
     max-width: var(--arch-max-width);
-    padding: 24px 0 80px;
+    padding: 28px 0 90px;
     position: relative;
 }
 
+/* Animated spine: dual-layer gradient pulse */
 .flow-container::before {
     content: '';
     position: absolute;
@@ -411,43 +596,53 @@
     left: 50%;
     margin-left: calc(var(--spine-width) / -2);
     width: var(--spine-width);
-    background: linear-gradient(to bottom,
+    background: linear-gradient(
+        to bottom,
         transparent 0%,
-        var(--accent-primary) 15%,
+        rgba(var(--accent-primary-rgb), 0.6) 10%,
+        var(--accent-primary) 30%,
         var(--accent-secondary) 55%,
-        var(--accent-primary) 85%,
+        rgba(var(--accent-tertiary-rgb), 0.7) 75%,
+        var(--accent-primary) 88%,
         transparent 100%
     );
-    animation: spinePulse 3s ease-in-out infinite;
-    opacity: 0.25;
+    animation: spinePulse 3.2s ease-in-out infinite;
+    opacity: 0.22;
     z-index: 0;
     pointer-events: none;
+    border-radius: 9999px;
 }
 
-@keyframes spinePulse {
-    0%, 100% { opacity: 0.2; }
-    50%       { opacity: 0.55; }
-}
-
+/* Travelling dot — the focal point of the spine */
 .flow-spine-dot {
     position: absolute;
     left: 50%;
     top: 0;
-    width: 6px; height: 6px;
-    margin-left: -3px;
+    width: 8px; height: 8px;
+    margin-left: -4px;
     border-radius: 50%;
     background: var(--accent-primary);
-    box-shadow: 0 0 10px var(--accent-primary), 0 0 20px rgba(var(--accent-primary-rgb), 0.4);
-    animation: spineDotTravel 3.2s ease-in-out infinite;
+    box-shadow:
+        0 0 0 3px rgba(var(--accent-primary-rgb), 0.2),
+        0 0 12px rgba(var(--accent-primary-rgb), 0.8),
+        0 0 28px rgba(var(--accent-primary-rgb), 0.35);
+    animation: spineDotTravel 3.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     z-index: 3;
     pointer-events: none;
 }
 
-@keyframes spineDotTravel {
-    0%   { top: 4%;  opacity: 0; }
-    8%   { opacity: 1; }
-    92%  { opacity: 1; }
-    100% { top: 96%; opacity: 0; }
+/* Comet tail below the dot */
+.flow-spine-dot::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: linear-gradient(to bottom, rgba(var(--accent-primary-rgb), 0.6), transparent);
+    border-radius: 9999px;
+    animation: spineCometFade 3.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    pointer-events: none;
 }
 
 /* ==========================================
@@ -460,10 +655,10 @@
     position: relative;
     margin-bottom: var(--connector-gap);
     opacity: 0;
-    animation: nodeReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    animation-delay: calc(var(--step-index, 0) * var(--stagger-base, 80ms));
+    animation: nodeReveal 0.58s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Stagger 12 deep */
 .flow-step:nth-child(1)  { animation-delay: 0.08s; }
 .flow-step:nth-child(2)  { animation-delay: 0.16s; }
 .flow-step:nth-child(3)  { animation-delay: 0.24s; }
@@ -477,89 +672,90 @@
 .flow-step:nth-child(11) { animation-delay: 0.88s; }
 .flow-step:nth-child(12) { animation-delay: 0.96s; }
 
-@keyframes nodeReveal {
-    from { opacity: 0; transform: translateY(22px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
 /* ==========================================
-   7. STEP BOX (BASE NODE)
+   7. STEP BOX — Deep glass base node
    ========================================== */
 .step-box {
     width: 100%;
     max-width: var(--node-max-width);
-    min-height: 80px;
+    min-height: 84px;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     padding: var(--node-padding);
     background: var(--bg-secondary);
-    border: 1px solid var(--border-light);
+    border: 1.5px solid var(--border-light);
     border-radius: var(--node-radius);
     position: relative;
     z-index: 2;
     box-shadow:
         0 1px 2px rgba(0,0,0,0.04),
-        0 4px 8px rgba(0,0,0,0.04),
-        0 0 0 1px rgba(255,255,255,0.6) inset;
+        0 4px 10px rgba(0,0,0,0.05),
+        0 0 0 1px rgba(255,255,255,0.7) inset,
+        0 1px 0 rgba(255,255,255,0.9) inset;
     transition:
-        transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
-        box-shadow 0.25s ease,
-        border-color 0.2s ease,
-        background 0.2s ease;
+        transform 0.28s cubic-bezier(0.25, 0.8, 0.25, 1),
+        box-shadow 0.28s ease,
+        border-color 0.22s ease,
+        background 0.22s ease;
+    isolation: isolate;
 }
 
+/* Glass highlight layer */
 .step-box::after {
     content: '';
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(170deg, rgba(255,255,255,0.5) 0%, transparent 45%);
+    background: linear-gradient(
+        170deg,
+        rgba(255,255,255,0.55) 0%,
+        rgba(255,255,255,0.1) 30%,
+        transparent 55%
+    );
     pointer-events: none;
     z-index: 1;
 }
 
 .step-box:hover {
-    transform: translateY(-5px) scale(1.015);
-    border-color: rgba(var(--accent-primary-rgb), 0.4);
+    transform: translateY(-6px) scale(1.012);
+    border-color: rgba(var(--accent-primary-rgb), 0.38);
     box-shadow:
-        0 0 0 1px rgba(var(--accent-primary-rgb), 0.2),
-        0 16px 40px rgba(var(--accent-primary-rgb), 0.18),
-        0 4px 8px rgba(0,0,0,0.06);
+        0 0 0 1px rgba(var(--accent-primary-rgb), 0.18),
+        0 20px 48px rgba(var(--accent-primary-rgb), 0.16),
+        0 8px 16px rgba(0,0,0,0.06),
+        0 1px 0 rgba(255,255,255,0.9) inset;
     background: var(--bg-secondary);
     z-index: 10;
 }
 
+/* Connection dot above node */
 .step-box::before {
     content: '';
     position: absolute;
-    top: -10px; left: 50%;
+    top: -11px; left: 50%;
     transform: translateX(-50%);
-    width: 10px; height: 10px;
+    width: 11px; height: 11px;
     background: var(--border-medium);
     border-radius: 50%;
-    border: 2px solid var(--bg-secondary);
-    transition: all 0.28s ease;
+    border: 2.5px solid var(--bg-secondary);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 12;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
 
 .step-box:hover::before {
     background: var(--accent-success);
     border-color: var(--bg-secondary);
     box-shadow:
-        0 0 0 3px rgba(var(--accent-success-rgb), 0.2),
-        0 0 12px rgba(var(--accent-success-rgb), 0.7);
-    transform: translateX(-50%) scale(1.25);
+        0 0 0 4px rgba(var(--accent-success-rgb), 0.18),
+        0 0 16px rgba(var(--accent-success-rgb), 0.7);
+    transform: translateX(-50%) scale(1.3);
 }
 
 /* ==========================================
-   CONNECTORS
-   FIX: Removed `animation-delay: inherit` —
-   pseudo-elements cannot inherit animation-delay
-   from class-applied rules on the parent element.
-   Connectors now use a simple fade-in.
+   CONNECTORS — Gradient lines with mid-pulse
    ========================================== */
 .flow-step:not(:last-child)::after {
     content: '';
@@ -571,165 +767,197 @@
     height: var(--connector-gap);
     background: linear-gradient(
         to bottom,
-        var(--connector-color),
-        rgba(var(--accent-primary-rgb), 0.5)
+        var(--border-medium),
+        rgba(var(--accent-primary-rgb), 0.65) 55%,
+        rgba(var(--accent-primary-rgb), 0.4)
     );
+    border-radius: 9999px;
     z-index: 1;
     transform-origin: top center;
-    animation: connectorDraw 0.45s cubic-bezier(0.16, 1, 0.3, 1) both 0.1s;
+    animation: connectorDraw 0.48s cubic-bezier(0.16, 1, 0.3, 1) both 0.08s;
 }
 
-@keyframes connectorDraw {
-    from { transform: scaleY(0); opacity: 0; }
-    to   { transform: scaleY(1); opacity: 1; }
-}
-
+/* Arrowhead */
 .flow-step:not(:last-child)::before {
     content: '';
     position: absolute;
-    bottom: calc(var(--connector-gap) * -1 + (var(--connector-gap) / 2) - 4px);
+    bottom: calc(var(--connector-gap) * -1 + (var(--connector-gap) / 2) - 5px);
     left: 50%;
     transform: translateX(-50%);
     border-left: var(--connector-arrow-size) solid transparent;
     border-right: var(--connector-arrow-size) solid transparent;
-    border-top: calc(var(--connector-arrow-size) * 1.15) solid rgba(var(--accent-primary-rgb), 0.55);
+    border-top: calc(var(--connector-arrow-size) * 1.2) solid rgba(var(--accent-primary-rgb), 0.6);
     z-index: 2;
+    filter: drop-shadow(0 2px 4px rgba(var(--accent-primary-rgb), 0.3));
 }
 
 /* ==========================================
-   8. STEP TYPES
+   8. STEP TYPES — Semantic node variants
    ========================================== */
 
-/* START: Pill — Green */
+/* START: Capsule — Success green */
 .step-type-start .step-box {
-    border-radius: 60px;
+    border-radius: 9999px;
     border: 2px solid var(--accent-success);
-    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-success-rgb), 0.07));
+    background: linear-gradient(
+        135deg,
+        var(--bg-secondary),
+        rgba(var(--accent-success-rgb), 0.08)
+    );
     box-shadow:
-        0 0 0 4px rgba(var(--accent-success-rgb), 0.08),
-        0 4px 12px rgba(var(--accent-success-rgb), 0.1);
-}
-.step-type-start .step-box:hover {
-    box-shadow:
-        0 0 0 4px rgba(var(--accent-success-rgb), 0.15),
-        0 16px 40px rgba(var(--accent-success-rgb), 0.2);
-    border-color: var(--accent-success);
-}
-.step-type-start .step-box::before {
-    background: var(--accent-success);
-    box-shadow: 0 0 12px rgba(var(--accent-success-rgb), 0.7);
+        0 0 0 5px rgba(var(--accent-success-rgb), 0.07),
+        0 4px 14px rgba(var(--accent-success-rgb), 0.12),
+        inset 0 1px 0 rgba(255,255,255,0.6);
+    padding: 18px 40px;
+    min-height: unset;
 }
 
-/* FIX: step-index hidden on pill nodes (index badge at sharp corners looks wrong) */
+.step-type-start .step-box:hover {
+    box-shadow:
+        0 0 0 5px rgba(var(--accent-success-rgb), 0.14),
+        0 20px 48px rgba(var(--accent-success-rgb), 0.22),
+        inset 0 1px 0 rgba(255,255,255,0.7);
+    border-color: var(--accent-success);
+}
+
+.step-type-start .step-box::before {
+    background: var(--accent-success);
+    box-shadow:
+        0 0 0 3px rgba(var(--accent-success-rgb), 0.18),
+        0 0 16px rgba(var(--accent-success-rgb), 0.8);
+}
+
 .step-type-start .step-index,
 .step-type-end .step-index { display: none; }
 
-/* END: Pill — Red */
+/* END: Capsule — Danger red */
 .step-type-end .step-box {
-    border-radius: 60px;
+    border-radius: 9999px;
     border: 2px solid var(--accent-danger);
-    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-danger-rgb), 0.07));
+    background: linear-gradient(
+        135deg,
+        var(--bg-secondary),
+        rgba(var(--accent-danger-rgb), 0.08)
+    );
     box-shadow:
-        0 0 0 4px rgba(var(--accent-danger-rgb), 0.08),
-        0 4px 12px rgba(var(--accent-danger-rgb), 0.1);
+        0 0 0 5px rgba(var(--accent-danger-rgb), 0.07),
+        0 4px 14px rgba(var(--accent-danger-rgb), 0.12),
+        inset 0 1px 0 rgba(255,255,255,0.6);
+    padding: 18px 40px;
+    min-height: unset;
 }
+
 .step-type-end .step-box:hover {
     border-color: var(--accent-danger);
     box-shadow:
-        0 0 0 4px rgba(var(--accent-danger-rgb), 0.15),
-        0 16px 40px rgba(var(--accent-danger-rgb), 0.2);
+        0 0 0 5px rgba(var(--accent-danger-rgb), 0.14),
+        0 20px 48px rgba(var(--accent-danger-rgb), 0.22),
+        inset 0 1px 0 rgba(255,255,255,0.7);
 }
+
 .step-type-end .step-box::before {
     background: var(--accent-danger);
-    box-shadow: 0 0 12px rgba(var(--accent-danger-rgb), 0.7);
+    box-shadow:
+        0 0 0 3px rgba(var(--accent-danger-rgb), 0.18),
+        0 0 16px rgba(var(--accent-danger-rgb), 0.8);
 }
 
-/* HIGHLIGHT: Left accent bar — Cyan */
+/* HIGHLIGHT: Left accent rail — Cyan */
 .step-type-highlight .step-box {
-    border: 1px solid rgba(var(--accent-primary-rgb), 0.3);
+    border: 1.5px solid rgba(var(--accent-primary-rgb), 0.28);
     border-left: 4px solid var(--accent-primary);
     border-radius: var(--node-radius);
-    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-primary-rgb), 0.05));
-    box-shadow: -4px 0 12px rgba(var(--accent-primary-rgb), 0.12), 0 4px 8px rgba(0,0,0,0.04);
-}
-.step-type-highlight .step-box:hover {
+    background: linear-gradient(
+        135deg,
+        rgba(var(--accent-primary-rgb), 0.04) 0%,
+        var(--bg-secondary) 60%
+    );
     box-shadow:
-        -4px 0 20px rgba(var(--accent-primary-rgb), 0.25),
-        0 0 0 1px rgba(var(--accent-primary-rgb), 0.2),
-        0 16px 40px rgba(var(--accent-primary-rgb), 0.15);
+        -4px 0 18px rgba(var(--accent-primary-rgb), 0.14),
+        0 4px 10px rgba(0,0,0,0.04),
+        inset 0 1px 0 rgba(255,255,255,0.7);
 }
 
-/* CONTAINER: Dashed */
-.step-type-container .step-box {
-    background: var(--bg-tertiary);
-    border: 1.5px dashed var(--border-medium);
-    box-shadow: none;
+.step-type-highlight .step-box:hover {
+    box-shadow:
+        -4px 0 28px rgba(var(--accent-primary-rgb), 0.28),
+        0 0 0 1px rgba(var(--accent-primary-rgb), 0.2),
+        0 20px 48px rgba(var(--accent-primary-rgb), 0.14),
+        inset 0 1px 0 rgba(255,255,255,0.7);
 }
+
+/* CONTAINER: Dashed boundary */
+.step-type-container .step-box {
+    background: rgba(var(--accent-primary-rgb), 0.015);
+    border: 1.5px dashed var(--border-medium);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);
+}
+
 .step-type-container .step-box:hover {
-    border-color: rgba(var(--accent-primary-rgb), 0.4);
+    border-color: rgba(var(--accent-primary-rgb), 0.38);
     border-style: dashed;
+    box-shadow:
+        inset 0 2px 8px rgba(0,0,0,0.02),
+        0 0 0 1px rgba(var(--accent-primary-rgb), 0.08);
 }
 
 /* ==========================================
-   DECISION / DIAMOND NODE
-   ==========================================
-   FIX: clip-path clips box-shadow entirely on
-   the clipped element. Using filter:drop-shadow()
-   instead — operates on the composited pixel
-   layer after clipping, so it's always visible.
-   
-   FIX: Decision step has margin-bottom + 20px extra.
-   The connector pseudo-elements must match that
-   extra space or they'll be 20px short of the next node.
+   DECISION DIAMOND
    ========================================== */
 .step-type-decision {
     margin-bottom: calc(var(--connector-gap) + 20px);
 }
 
-/* FIX: Override connector sizing for decision's extended gap */
 .step-type-decision.flow-step:not(:last-child)::after {
     height: calc(var(--connector-gap) + 20px);
     bottom: calc((var(--connector-gap) + 20px) * -1);
 }
+
 .step-type-decision.flow-step:not(:last-child)::before {
-    bottom: calc((var(--connector-gap) + 20px) * -1 + (var(--connector-gap) + 20px) / 2 - 4px);
+    bottom: calc((var(--connector-gap) + 20px) * -1 + (var(--connector-gap) + 20px) / 2 - 5px);
 }
 
 .step-type-decision .step-box {
-    width: 200px;
-    height: 200px;
-    max-width: 200px;
+    width: 210px;
+    height: 210px;
+    max-width: 210px;
     min-height: unset;
     padding: 0;
     clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
     border-radius: 0;
-    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-warning-rgb), 0.09));
+    background: linear-gradient(
+        135deg,
+        rgba(255,255,255,0.95) 0%,
+        rgba(var(--accent-warning-rgb), 0.1) 100%
+    );
     border: none;
-    /* FIX: drop-shadow works with clip-path; box-shadow does not */
+    /* drop-shadow respects clip-path — box-shadow does not */
     filter:
-        drop-shadow(0 0 8px rgba(var(--accent-warning-rgb), 0.4))
-        drop-shadow(0 6px 16px rgba(var(--accent-warning-rgb), 0.15));
+        drop-shadow(0 0 10px rgba(var(--accent-warning-rgb), 0.42))
+        drop-shadow(0 8px 24px rgba(var(--accent-warning-rgb), 0.18));
     box-shadow: none;
     justify-content: center;
-    display: flex;
     align-items: center;
-    transition: transform 0.3s ease, filter 0.3s ease;
+    display: flex;
+    transition: transform 0.32s ease, filter 0.32s ease;
+    animation: decisionPulse 3s ease-in-out infinite;
 }
 
 .step-type-decision .step-box::before { display: none; }
 .step-type-decision .step-box::after  { display: none; }
 
 .step-type-decision .step-box:hover {
-    transform: translateY(-4px) scale(1.05);
+    transform: translateY(-5px) scale(1.06);
     filter:
-        drop-shadow(0 0 14px rgba(var(--accent-warning-rgb), 0.6))
-        drop-shadow(0 12px 30px rgba(var(--accent-warning-rgb), 0.25));
+        drop-shadow(0 0 18px rgba(var(--accent-warning-rgb), 0.68))
+        drop-shadow(0 16px 40px rgba(var(--accent-warning-rgb), 0.28));
+    animation-play-state: paused;
 }
 
 .step-type-decision .step-label {
     font-size: var(--font-size-xs);
-    padding: 0 28px;
-    line-height: 1.3;
+    padding: 0 30px;
+    line-height: 1.35;
 }
 
 .decision-branch-labels {
@@ -737,8 +965,8 @@
     justify-content: space-between;
     width: 100%;
     max-width: var(--node-max-width);
-    padding: 0 24px;
-    margin-top: -28px;
+    padding: 0 28px;
+    margin-top: -30px;
     position: relative;
     z-index: 3;
     pointer-events: none;
@@ -747,29 +975,29 @@
 .decision-label-yes,
 .decision-label-no {
     font-size: var(--font-size-xs);
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 3px 10px;
-    border-radius: 20px;
+    letter-spacing: 0.07em;
+    padding: 3px 11px;
+    border-radius: 9999px;
 }
+
 .decision-label-yes {
     color: var(--accent-success);
     background: rgba(var(--accent-success-rgb), 0.1);
-    border: 1px solid rgba(var(--accent-success-rgb), 0.25);
+    border: 1.5px solid rgba(var(--accent-success-rgb), 0.28);
+    box-shadow: 0 0 10px rgba(var(--accent-success-rgb), 0.08);
 }
+
 .decision-label-no {
     color: var(--accent-danger);
     background: rgba(var(--accent-danger-rgb), 0.1);
-    border: 1px solid rgba(var(--accent-danger-rgb), 0.25);
+    border: 1.5px solid rgba(var(--accent-danger-rgb), 0.28);
+    box-shadow: 0 0 10px rgba(var(--accent-danger-rgb), 0.08);
 }
 
 /* ==========================================
    PARALLEL LANES
-   FIX: parallel-header had display:inline-block
-   then display:flex — second overrides first.
-   Removed dead inline-block declaration.
-   FIX: flow-step-parallel had no stagger delays.
    ========================================== */
 .flow-step-parallel {
     width: 100%;
@@ -777,10 +1005,9 @@
     position: relative;
     margin-bottom: var(--connector-gap);
     opacity: 0;
-    animation: nodeReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: nodeReveal 0.58s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* FIX: Stagger parallel blocks by position */
 .flow-step-parallel:nth-child(1) { animation-delay: 0.08s; }
 .flow-step-parallel:nth-child(2) { animation-delay: 0.16s; }
 .flow-step-parallel:nth-child(3) { animation-delay: 0.24s; }
@@ -788,24 +1015,36 @@
 .flow-step-parallel:nth-child(5) { animation-delay: 0.40s; }
 .flow-step-parallel:nth-child(6) { animation-delay: 0.48s; }
 
-/* FIX: display:flex only — removed dead display:inline-block */
 .parallel-header {
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: 8px;
     font-size: var(--font-size-xs);
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
     color: var(--text-muted);
     margin-bottom: 16px;
-    padding: 6px 16px;
+    padding: 6px 18px;
     background: var(--bg-tertiary);
-    border: 1px solid var(--border-light);
-    border-radius: 20px;
+    border: 1.5px solid var(--border-light);
+    border-radius: 9999px;
     width: fit-content;
     margin-left: auto;
     margin-right: auto;
+    box-shadow: var(--shadow-xs), inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+/* Accent pip in parallel header */
+.parallel-header::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    box-shadow: 0 0 6px rgba(var(--accent-primary-rgb), 0.6);
+    flex-shrink: 0;
 }
 
 .parallel-lanes {
@@ -815,13 +1054,18 @@
     position: relative;
 }
 
+/* Center divider */
 .parallel-lanes::before {
     content: '';
     position: absolute;
-    top: 0; bottom: 0; left: 50%;
+    top: 5%; bottom: 5%; left: 50%;
     width: 1px;
     background: linear-gradient(
-        to bottom, transparent, var(--border-medium) 20%, var(--border-medium) 80%, transparent
+        to bottom,
+        transparent,
+        var(--border-medium) 25%,
+        var(--border-medium) 75%,
+        transparent
     );
     pointer-events: none;
     z-index: 0;
@@ -831,86 +1075,116 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
-    padding: 20px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-light);
+    padding: 22px;
+    background: rgba(255,255,255,0.6);
+    border: 1.5px solid var(--border-light);
     border-radius: var(--radius-lg);
     position: relative;
     z-index: 1;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-xs), inset 0 1px 0 rgba(255,255,255,0.7);
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.parallel-lane:hover {
+    border-color: rgba(var(--accent-primary-rgb), 0.22);
+    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.7);
 }
 
 .parallel-lane-title {
     font-size: var(--font-size-xs);
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.08em;
     color: var(--accent-primary);
     padding-bottom: 10px;
-    border-bottom: 1px solid rgba(var(--accent-primary-rgb), 0.15);
+    border-bottom: 1px solid rgba(var(--accent-primary-rgb), 0.14);
     margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+/* Lane title accent pip */
+.parallel-lane-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px; height: 12px;
+    background: linear-gradient(to bottom, var(--accent-primary), var(--accent-secondary));
+    border-radius: 9999px;
+    box-shadow: 0 0 6px rgba(var(--accent-primary-rgb), 0.4);
+    flex-shrink: 0;
 }
 
 .parallel-step {
     background: var(--bg-secondary);
-    border: 1px solid var(--border-light);
+    border: 1.5px solid var(--border-light);
     border-radius: var(--radius-md);
     padding: 14px 16px;
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
-    line-height: 1.5;
+    line-height: 1.55;
     transition: all var(--transition-fast);
+    box-shadow: var(--shadow-xs);
 }
+
 .parallel-step:hover {
-    border-color: rgba(var(--accent-primary-rgb), 0.3);
+    border-color: rgba(var(--accent-primary-rgb), 0.28);
     transform: translateX(3px);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-sm), 0 0 0 1px rgba(var(--accent-primary-rgb), 0.08);
 }
 
 .parallel-step-label {
     font-weight: 700;
     color: var(--text-primary);
     font-size: var(--font-size-sm);
-    margin-bottom: 4px;
+    margin-bottom: 5px;
+    letter-spacing: -0.01em;
 }
 
 /* ==========================================
    ANNOTATION / NOTE NODE
-   FIX: The annotation .step-box has transform:translateX(20px).
-   The ::before connector used `right: 100%; width: 20px` — this
-   left a 20px gap because right:100% is relative to the flex item
-   boundary, not the translated box position.
-   Fix: extend width to 40px and adjust right so it bridges both
-   the container edge AND the 20px translateX gap.
    ========================================== */
 .step-type-annotation {
     justify-content: flex-end;
 }
 
 .step-type-annotation .step-box {
-    max-width: 340px;
-    background: linear-gradient(135deg, rgba(var(--accent-warning-rgb), 0.06), var(--bg-secondary));
-    border: 1px dashed rgba(var(--accent-warning-rgb), 0.4);
+    max-width: 350px;
+    background: linear-gradient(
+        135deg,
+        rgba(var(--accent-warning-rgb), 0.07) 0%,
+        rgba(255, 255, 255, 0.95) 60%
+    );
+    border: 1.5px dashed rgba(var(--accent-warning-rgb), 0.38);
     border-left: 3px solid var(--accent-warning);
     border-radius: var(--radius-md);
     margin-left: auto;
     margin-right: 0;
     transform: translateX(20px);
-    box-shadow: none;
+    box-shadow:
+        -4px 0 12px rgba(var(--accent-warning-rgb), 0.08),
+        0 4px 12px rgba(0,0,0,0.04),
+        inset 0 1px 0 rgba(255,255,255,0.8);
     transition:
-        transform 0.25s ease,
-        border-color 0.2s ease,
-        box-shadow 0.25s ease,
-        background 0.2s ease;
+        transform 0.28s ease,
+        border-color 0.22s ease,
+        box-shadow 0.28s ease,
+        background 0.22s ease;
 }
 
 .step-type-annotation .step-box:hover {
-    transform: translateX(16px) translateY(-3px);
-    border-color: var(--accent-warning);
+    transform: translateX(16px) translateY(-4px);
+    border-color: rgba(var(--accent-warning-rgb), 0.65);
     border-left-color: var(--accent-warning);
-    box-shadow: 0 8px 24px rgba(var(--accent-warning-rgb), 0.15);
+    box-shadow:
+        -4px 0 20px rgba(var(--accent-warning-rgb), 0.18),
+        0 12px 32px rgba(var(--accent-warning-rgb), 0.12),
+        inset 0 1px 0 rgba(255,255,255,0.8);
 }
 
-/* FIX: right offset + extended width bridges the translateX gap */
+/* Connector bridge — accounts for translateX(20px) on the box */
 .step-type-annotation::before {
     content: '';
     position: absolute;
@@ -918,54 +1192,54 @@
     right: calc(100% - 20px);
     width: 40px;
     height: 0;
-    border-top: 1.5px dashed rgba(var(--accent-warning-rgb), 0.45);
+    border-top: 1.5px dashed rgba(var(--accent-warning-rgb), 0.5);
     transform: translateY(-50%);
     pointer-events: none;
     z-index: 1;
 }
 
 /* ==========================================
-   LOOP-BACK INDICATOR
-   FIX: loopSpin on ::after required display:inline-block.
-        CSS transform has no effect on inline elements.
-   FIX: loopDash was using stroke-dashoffset — SVG-only property.
-        Replaced with border-color opacity pulse animation.
+   LOOP INDICATOR
    ========================================== */
 .step-has-loop::after {
     content: '';
     position: absolute;
-    left: calc(50% - var(--node-max-width) / 2 - 36px);
+    left: calc(50% - var(--node-max-width) / 2 - 38px);
     top: 50%;
-    width: 36px;
-    height: calc(var(--connector-gap) * 2 + 84px);
-    border: 2px dashed rgba(var(--accent-secondary-rgb), 0.4);
+    width: 38px;
+    height: calc(var(--connector-gap) * 2 + 88px);
+    border: 2px dashed rgba(var(--accent-secondary-rgb), 0.35);
     border-right: none;
-    border-radius: 14px 0 0 14px;
+    border-radius: 16px 0 0 16px;
     transform: translateY(-50%);
     z-index: 1;
     background: none;
-    /* FIX: border opacity pulse (border-color animation, no SVG props) */
-    animation: loopBorderPulse 2s ease-in-out infinite;
+    animation: loopBorderPulse 2.2s ease-in-out infinite;
 }
 
-@keyframes loopBorderPulse {
-    0%, 100% { border-color: rgba(var(--accent-secondary-rgb), 0.28); }
-    50%       { border-color: rgba(var(--accent-secondary-rgb), 0.65); }
+/* Loop back arrow point at top */
+.step-has-loop::before {
+    content: '';
+    position: absolute;
+    left: calc(50% - var(--node-max-width) / 2 - 43px);
+    top: calc(50% - var(--connector-gap) - 44px + 8px);
+    width: 0; height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 8px solid rgba(var(--accent-secondary-rgb), 0.55);
+    z-index: 2;
+    pointer-events: none;
+    filter: drop-shadow(0 0 4px rgba(var(--accent-secondary-rgb), 0.4));
 }
 
 .step-has-loop .step-label::after {
     content: '↺';
-    /* FIX: inline-block required — transform:rotate ignored on inline */
     display: inline-block;
-    margin-left: 6px;
-    font-size: 0.88em;
+    margin-left: 7px;
+    font-size: 0.9em;
     color: var(--accent-secondary);
-    animation: loopSpin 2.5s linear infinite;
-}
-
-@keyframes loopSpin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
+    animation: loopSpin 2.8s linear infinite;
+    vertical-align: middle;
 }
 
 /* ==========================================
@@ -977,7 +1251,7 @@
     color: var(--text-primary);
     margin-bottom: 4px;
     text-transform: uppercase;
-    letter-spacing: 0.045em;
+    letter-spacing: 0.05em;
     position: relative;
     z-index: 10;
     line-height: 1.3;
@@ -986,7 +1260,7 @@
 .step-desc {
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
-    line-height: 1.65;
+    line-height: 1.7;
     margin-top: 12px;
     padding-top: 12px;
     border-top: 1px solid var(--border-light);
@@ -1006,17 +1280,20 @@
     color: var(--text-muted);
     background: var(--bg-tertiary);
     border: 1px solid var(--border-light);
-    border-radius: 20px;
-    padding: 2px 8px;
-    letter-spacing: 0.04em;
+    border-radius: 9999px;
+    padding: 2px 9px;
+    letter-spacing: 0.05em;
     z-index: 12;
     transition: all var(--transition-fast);
     pointer-events: none;
+    font-variant-numeric: tabular-nums;
 }
+
 .step-box:hover .step-index {
     background: rgba(var(--accent-primary-rgb), 0.1);
     border-color: rgba(var(--accent-primary-rgb), 0.25);
     color: var(--accent-primary);
+    box-shadow: 0 0 8px rgba(var(--accent-primary-rgb), 0.12);
 }
 
 /* ==========================================
@@ -1028,14 +1305,17 @@
     gap: 16px;
     margin-top: 16px;
     margin-left: var(--branch-indent);
-    padding: 20px;
-    background: var(--bg-tertiary);
+    padding: 22px;
+    background: rgba(var(--accent-primary-rgb), 0.015);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--border-light);
-    box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);
+    border: 1.5px solid var(--border-light);
+    box-shadow:
+        inset 0 2px 10px rgba(0,0,0,0.022),
+        inset 0 0 0 1px rgba(255,255,255,0.6);
     position: relative;
 }
 
+/* Horizontal branch line */
 .step-children::before {
     content: '';
     position: absolute;
@@ -1048,6 +1328,7 @@
     pointer-events: none;
 }
 
+/* Branch arrow */
 .step-children::after {
     content: '';
     position: absolute;
@@ -1068,17 +1349,18 @@
 
     .arch-gallery-wrapper { padding-left: 16px; padding-right: 16px; }
 
-    .flow-container { padding: 12px 0 40px; }
+    .flow-container { padding: 14px 0 50px; }
 
     .viz-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
         margin-bottom: 28px;
+        padding-bottom: 20px;
     }
 
     .viz-back-btn { order: -1; }
-    .viz-title { white-space: normal; }
+    .viz-title { white-space: normal; -webkit-text-fill-color: unset; color: var(--text-primary); }
     .viz-subtitle { white-space: normal; }
 
     .step-box { max-width: 100%; padding: 18px 20px; }
@@ -1086,7 +1368,7 @@
     .step-type-decision .step-box {
         width: 160px; height: 160px; max-width: 160px;
     }
-    /* Decision connectors on mobile */
+
     .step-type-decision.flow-step:not(:last-child)::after {
         height: calc(var(--connector-gap) + 20px);
         bottom: calc((var(--connector-gap) + 20px) * -1);
@@ -1095,53 +1377,82 @@
     .parallel-lanes { grid-template-columns: 1fr; gap: 14px; }
     .parallel-lanes::before { display: none; }
 
-    .step-type-annotation .step-box { transform: translateX(0); max-width: 100%; }
+    .step-type-annotation .step-box {
+        transform: translateX(0);
+        max-width: 100%;
+        border-radius: var(--radius-md);
+    }
     .step-type-annotation::before { display: none; }
 
     .step-children {
         margin-left: 0;
         background: transparent;
-        border: 1px dashed var(--border-medium);
+        border: 1.5px dashed var(--border-medium);
+        box-shadow: none;
     }
     .step-children::before,
     .step-children::after { display: none; }
 
-    .step-has-loop::after { display: none; }
+    .step-has-loop::after  { display: none; }
+    .step-has-loop::before { display: none; }
     .flow-spine-dot { display: none; }
+
+    .decision-branch-labels { padding: 0 12px; }
 }
 
 @media (max-width: 480px) {
     .arch-gallery { grid-template-columns: 1fr; }
-    .arch-visualizer { padding-left: 16px; padding-right: 16px; }
+    .arch-visualizer { padding-left: 14px; padding-right: 14px; }
+    .step-type-start .step-box,
+    .step-type-end .step-box { padding: 14px 28px; }
 }
 
 /* ==========================================
-   12. DARK MODE
-   FIX: [data-theme="dark"] matches main CSS
-        toggle — NOT prefers-color-scheme.
+   12. DARK MODE — Obsidian overrides
    ========================================== */
 [data-theme="dark"] #archView {
     background-image:
-        linear-gradient(rgba(var(--accent-primary-rgb), 0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(var(--accent-primary-rgb), 0.06) 1px, transparent 1px),
-        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-    background-size: 120px 120px, 120px 120px, 30px 30px, 30px 30px;
+        radial-gradient(ellipse 90% 70% at 50% 50%, transparent 40%, rgba(0,0,0,0.18) 100%),
+        linear-gradient(rgba(var(--accent-primary-rgb), 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(var(--accent-primary-rgb), 0.07) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size:
+        100% 100%,
+        120px 120px,
+        120px 120px,
+        30px 30px,
+        30px 30px;
+    box-shadow: inset 0 0 120px rgba(var(--accent-primary-rgb), 0.05);
 }
 
 [data-theme="dark"] .flow-container::before {
-    opacity: 0.45;
-    background: linear-gradient(to bottom,
-        transparent 0%, var(--accent-primary) 30%, var(--accent-secondary) 60%, transparent 100%
+    opacity: 0.5;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(var(--accent-primary-rgb), 0.8) 20%,
+        var(--accent-secondary) 55%,
+        rgba(var(--accent-tertiary-rgb), 0.6) 78%,
+        transparent 100%
     );
 }
 
+[data-theme="dark"] .flow-spine-dot {
+    background: rgba(var(--accent-primary-rgb), 1);
+    box-shadow:
+        0 0 0 4px rgba(var(--accent-primary-rgb), 0.25),
+        0 0 18px rgba(var(--accent-primary-rgb), 1),
+        0 0 40px rgba(var(--accent-primary-rgb), 0.5);
+}
+
+/* ── Dark: Node boxes ── */
 [data-theme="dark"] .step-box {
     background: var(--bg-secondary);
     border-color: var(--border-medium);
     box-shadow:
-        0 1px 2px rgba(0,0,0,0.35),
-        0 4px 8px rgba(0,0,0,0.25),
+        0 1px 2px rgba(0,0,0,0.5),
+        0 4px 12px rgba(0,0,0,0.35),
         0 0 0 1px rgba(255,255,255,0.03) inset;
 }
 
@@ -1149,10 +1460,11 @@
 
 [data-theme="dark"] .step-box:hover {
     background: var(--bg-tertiary);
+    border-color: rgba(var(--accent-primary-rgb), 0.4);
     box-shadow:
-        0 0 0 1px rgba(var(--accent-primary-rgb), 0.3),
-        0 16px 40px rgba(var(--accent-primary-rgb), 0.2),
-        0 4px 8px rgba(0,0,0,0.3);
+        0 0 0 1px rgba(var(--accent-primary-rgb), 0.28),
+        0 20px 50px rgba(var(--accent-primary-rgb), 0.22),
+        0 8px 16px rgba(0,0,0,0.4);
 }
 
 [data-theme="dark"] .step-box::before {
@@ -1160,68 +1472,179 @@
     background: var(--border-dark);
 }
 
+/* ── Dark: Step types ── */
 [data-theme="dark"] .step-type-start .step-box {
     background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-success-rgb), 0.14));
-    border-color: rgba(var(--accent-success-rgb), 0.4);
+    border-color: rgba(var(--accent-success-rgb), 0.45);
+    box-shadow:
+        0 0 0 5px rgba(var(--accent-success-rgb), 0.1),
+        0 4px 16px rgba(var(--accent-success-rgb), 0.15);
 }
 [data-theme="dark"] .step-type-end .step-box {
     background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-danger-rgb), 0.14));
-    border-color: rgba(var(--accent-danger-rgb), 0.4);
+    border-color: rgba(var(--accent-danger-rgb), 0.45);
+    box-shadow:
+        0 0 0 5px rgba(var(--accent-danger-rgb), 0.1),
+        0 4px 16px rgba(var(--accent-danger-rgb), 0.15);
 }
 [data-theme="dark"] .step-type-highlight .step-box {
-    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-primary-rgb), 0.12));
-    border-color: rgba(var(--accent-primary-rgb), 0.35);
+    background: linear-gradient(135deg, rgba(var(--accent-primary-rgb), 0.1), var(--bg-secondary));
+    border-color: rgba(var(--accent-primary-rgb), 0.4);
+    box-shadow: -4px 0 24px rgba(var(--accent-primary-rgb), 0.2);
 }
 [data-theme="dark"] .step-type-container .step-box {
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(10, 17, 32, 0.75);
     border-color: var(--border-medium);
 }
 [data-theme="dark"] .step-type-decision .step-box {
-    background: linear-gradient(135deg, var(--bg-secondary), rgba(var(--accent-warning-rgb), 0.13));
+    background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(var(--accent-warning-rgb), 0.16));
     filter:
-        drop-shadow(0 0 8px rgba(var(--accent-warning-rgb), 0.5))
-        drop-shadow(0 6px 16px rgba(var(--accent-warning-rgb), 0.2));
+        drop-shadow(0 0 12px rgba(var(--accent-warning-rgb), 0.55))
+        drop-shadow(0 8px 28px rgba(var(--accent-warning-rgb), 0.25));
+    animation: decisionPulse 3s ease-in-out infinite;
+}
+[data-theme="dark"] .step-type-decision .step-box:hover {
+    filter:
+        drop-shadow(0 0 22px rgba(var(--accent-warning-rgb), 0.75))
+        drop-shadow(0 16px 48px rgba(var(--accent-warning-rgb), 0.35));
 }
 [data-theme="dark"] .step-type-annotation .step-box {
-    background: linear-gradient(135deg, rgba(var(--accent-warning-rgb), 0.09), var(--bg-secondary));
-    border-color: rgba(var(--accent-warning-rgb), 0.3);
+    background: linear-gradient(
+        135deg,
+        rgba(var(--accent-warning-rgb), 0.1) 0%,
+        rgba(17,24,39,0.9) 65%
+    );
+    border-color: rgba(var(--accent-warning-rgb), 0.32);
+    box-shadow: -4px 0 16px rgba(var(--accent-warning-rgb), 0.12);
+}
+[data-theme="dark"] .step-type-annotation .step-box:hover {
+    border-color: rgba(var(--accent-warning-rgb), 0.6);
 }
 
+/* ── Dark: Step children ── */
 [data-theme="dark"] .step-children {
-    background: rgba(15, 23, 42, 0.7);
+    background: rgba(10, 17, 32, 0.6);
     border-color: var(--border-medium);
-    box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+    box-shadow: inset 0 2px 12px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.02);
 }
 
+/* ── Dark: Gallery cards ── */
 [data-theme="dark"] .arch-card {
     background: var(--bg-secondary);
+    border-color: var(--border-medium);
+    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 [data-theme="dark"] .arch-card:hover {
     background: var(--bg-tertiary);
     border-color: rgba(var(--accent-primary-rgb), 0.3);
+    box-shadow:
+        0 20px 48px rgba(var(--accent-primary-rgb), 0.18),
+        0 8px 16px rgba(0,0,0,0.4),
+        0 0 0 1px rgba(var(--accent-primary-rgb), 0.12);
+}
+[data-theme="dark"] .arch-card-meta-dot {
+    box-shadow:
+        0 0 0 3px rgba(var(--accent-success-rgb), 0.2),
+        0 0 12px rgba(var(--accent-success-rgb), 0.85);
 }
 
+/* ── Dark: Parallel lanes ── */
 [data-theme="dark"] .parallel-lane {
-    background: rgba(15, 23, 42, 0.6);
+    background: rgba(10, 17, 32, 0.65);
     border-color: var(--border-medium);
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-xs), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+[data-theme="dark"] .parallel-lane:hover {
+    border-color: rgba(var(--accent-primary-rgb), 0.28);
 }
 [data-theme="dark"] .parallel-step {
     background: var(--bg-secondary);
     border-color: var(--border-medium);
+    box-shadow: none;
+}
+[data-theme="dark"] .parallel-step:hover {
+    border-color: rgba(var(--accent-primary-rgb), 0.32);
+    box-shadow: 0 0 0 1px rgba(var(--accent-primary-rgb), 0.1);
 }
 [data-theme="dark"] .parallel-lanes::before {
     background: linear-gradient(
-        to bottom, transparent, var(--border-dark) 20%, var(--border-dark) 80%, transparent
+        to bottom,
+        transparent,
+        var(--border-dark) 25%,
+        var(--border-dark) 75%,
+        transparent
     );
 }
 
+/* ── Dark: Step index badge ── */
 [data-theme="dark"] .step-index {
-    background: rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.05);
     border-color: var(--border-medium);
+    color: var(--text-muted);
+}
+[data-theme="dark"] .step-box:hover .step-index {
+    background: rgba(var(--accent-primary-rgb), 0.15);
+    border-color: rgba(var(--accent-primary-rgb), 0.3);
+    color: rgba(var(--accent-primary-rgb), 0.9);
 }
 
-[data-theme="dark"] .viz-header::after { opacity: 0.65; }
+/* ── Dark: viz-header ── */
+[data-theme="dark"] .viz-header::after { opacity: 0.7; }
+[data-theme="dark"] .viz-header::before { opacity: 0.6; }
+[data-theme="dark"] .viz-title {
+    background: linear-gradient(135deg, var(--text-primary) 50%, var(--text-secondary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
 
-[data-theme="dark"] .arch-card-meta-dot {
-    box-shadow: 0 0 8px rgba(var(--accent-success-rgb), 0.8);
+/* ── Dark: Decision branch labels ── */
+[data-theme="dark"] .decision-label-yes {
+    background: rgba(var(--accent-success-rgb), 0.14);
+    border-color: rgba(var(--accent-success-rgb), 0.35);
+}
+[data-theme="dark"] .decision-label-no {
+    background: rgba(var(--accent-danger-rgb), 0.14);
+    border-color: rgba(var(--accent-danger-rgb), 0.35);
+}
+
+/* ── Dark: Parallel header ── */
+[data-theme="dark"] .parallel-header {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--border-medium);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* ── Dark: Back button ── */
+[data-theme="dark"] .viz-back-btn {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+    box-shadow: none;
+}
+[data-theme="dark"] .viz-back-btn:hover {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+    box-shadow: 0 4px 20px rgba(var(--accent-primary-rgb), 0.45);
+}
+
+/* ── Dark: Step desc separator ── */
+[data-theme="dark"] .step-desc {
+    border-top-color: rgba(255,255,255,0.06);
+}
+
+/* ── Dark: Arch card meta ── */
+[data-theme="dark"] .arch-card-meta {
+    border-top-color: var(--border-medium);
+}
+
+/* ── Dark: Loop indicator ── */
+[data-theme="dark"] .step-has-loop::after {
+    border-color: rgba(var(--accent-secondary-rgb), 0.35);
+}
+[data-theme="dark"] .step-has-loop::before {
+    border-left-color: rgba(var(--accent-secondary-rgb), 0.6);
+    filter: drop-shadow(0 0 6px rgba(var(--accent-secondary-rgb), 0.5));
 }
